@@ -1,0 +1,56 @@
+---
+title: "Modelling Competition: House Prices"
+author: 
+- Roberto Alvarez Llordachs
+- Javier Goñi Artieda
+- Marcos Crespo Díaz
+- Gabriela Levenfeld Sabau
+- Sofía Gianelli Nan
+- Miguel Díaz-Plaza Cabrera
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    toc: yes
+    toc_depth: 4
+    number_sections: yes
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+House prices have sparked lot of debate recently in our society. Currently, this topic has aroused controversy on the grounds that has been a cornerstone in 2008 crisis. Were buyers to decide a model for setting the selling price, which factors would be included and what would be their weight?
+
+The goal of this project is to create a effective price prediction model.
+
+
+
+
+# Data Preparation
+
+First step would be to load both databases, train and test.
+```{r}
+train <- read.csv("train.csv", sep=",")
+test <- read.csv("test.csv", sep=",")
+
+column_diff <- setdiff(names(train), names(test))
+```
+We can see that train contain one more column than test, this extra column is `r column_diff`.
+The data set collects 2919 observations of different features of residential houses in Ames, Iowa. The number of features is given by the number of columns 
+
+
+
+Ideas en base a Lab1:
+
+- Data preprocessing: Remove unnecesary columns such as ID, in Lab1 remove characteristics with one observation. Check that categorical variables are factors. Check summary to check everything is correct.
+
+- After datapreprocessing do Exploratory analysis: Correlations (ggpairs, in Lab 2 values and colors), histograms of predictors, plots of response vs some predictors (only comment important ones)
+
+- Modeling: regsubsets only when continuous, Lab1 use stepAIC... Check model assumptions.
+
+- Prediction
+
+
