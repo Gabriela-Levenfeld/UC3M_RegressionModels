@@ -32,14 +32,119 @@ The goal of this project is to create a effective price prediction model.
 # Data Preparation
 
 First step would be to load both databases, train and test.
+
 ```{r}
 train <- read.csv("train.csv", sep=",")
 test <- read.csv("test.csv", sep=",")
 
 column_diff <- setdiff(names(train), names(test))
 ```
+
 We can see that train contain one more column than test, this extra column is `r column_diff`.
 The data set collects 2919 observations of different features of residential houses in Ames, Iowa. The number of features is given by the number of columns 
+
+```{r}
+# In order to visualize the data
+rmarkdown::paged_table(train)
+rmarkdown::paged_table(test)
+summary(train)
+```
+
+Miro cuántos NAs hay en cada varibales para ver si puedo quitar algún feature así de primeras.
+
+```{r}
+n_rows <- nrow(train)
+# Counting NA: TRAIN y expresado en %
+(colSums(is.na(train))/nrow(train))*100
+```
+```{r}
+# Counting NA: TEST y expresado en %
+(colSums(is.na(test))/nrow(train))*100
+```
+Conclusión?
+
+Id, hay que quitarla pero a la espera de si se pueden juntar los datasets o no
+
+Variables que hay que eliminar 100% (su % de missing values es altísimo)
+-   Alley, con un 93% (train) y un 92% (test)
+-   PoolQC (Pool quality)
+-   Fence (Fence quality)
+-   MiscFeature (Miscellaneous feature not covered in other categories)
+
+Aaproximadamente el 50% son missing values:
+Quizás sería buena hacer un análisis más profundo, para ver cuánto de significativa es la variable.
+-   FireplaceQu (Fireplace quality)
+
+Ahora, rearrange the dataset and delete the 4 variables because they have a high number of missing values.
+
+```{r}
+# Ordenar dataset: primero continuas y  luego categoricas
+train <- train[,c(1,81,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,48,49,50,51,52,53,54,55,56,57,58,59,61,62,64,65,66,73,74,75,77,79,80)]
+
+# Eliminar: Alley, PoolQC, Fence y MiscFeature
+train <- train[,-c(29,76,77,78)]
+```
+
+A continuación, el objetivo es pasar las variables categóricas a factor para poder trabajar con ellas. Y ver el número de observaciones que tenemos para cada una de los posibles valores de las categorías.
+
+```{r}
+train <- train %>% mutate_if(~is.character(.), ~as.factor(.))
+
+train$OverallQual <- factor(train$OverallQual)
+train$OverallCond <- factor(train$OverallCond)
+train$MSSubClass <- factor(train$MSSubClass)
+
+print(class(train$OverallQual))
+print(class(train$OverallCond))
+print(class(train$MSSubClass))
+```
+
+```{r}
+library(dplyr)
+
+# Lista de columnas categóricas
+columnas_categoricas <- colnames(train)[sapply(train, is.factor)]
+columnas_categoricas
+
+tablas_frecuencia <- list()
+
+#INTENTO 1
+# Iterar sobre cada columna categórica y crear la tabla de frecuencia
+for (col in columnas_categoricas) {
+  tablas_frecuencia[[col]] <- table(train[[col]])
+}
+
+# Mostrar las tablas de frecuencia
+tablas_frecuencia
+
+```
+
+Mismo procedimiento para el test dataset
+
+```{r}
+
+test <- test %>% mutate_if(~is.character(.), ~as.factor(.))
+
+test$OverallQual <- factor(test$OverallQual)
+test$OverallCond <- factor(test$OverallCond)
+test$MSSubClass <- factor(test$MSSubClass)
+
+
+# Lista de columnas categóricas
+columnas_categoricas <- colnames(test)[sapply(test, is.factor)]
+columnas_categoricas
+
+tablas_frecuencia <- list()
+
+# Iterar sobre cada columna categórica y crear la tabla de frecuencia
+for (col in columnas_categoricas) {
+  tablas_frecuencia[[col]] <- table(test[[col]])
+}
+
+# Mostrar las tablas de frecuencia
+tablas_frecuencia
+```
+
 
 
 
