@@ -73,7 +73,7 @@ skim(train)
 
 ```{r}
 # Ordenar las columnas por tipo de variable (Las 25 primeras son continuas)
-train <- train[,c(1,81,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,48,49,50,51,52,53,54,55,56,57,58,59,61,62,64,65,66,73,74,75,77,79,80)]
+train <- train[,c(1,81,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,48,49,50,51,52,53,55,57,62,77,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,54,56,58,59,61,64,65,66,73,74,75,79,80)]
 
 #test <- test[,c(1,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,48,49,50,51,52,53,54,55,56,57,58,59,61,62,64,65,66,73,74,75,77,79,80)]
 ```
@@ -84,19 +84,6 @@ train <- train[,c(1,81,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71
 # Eliminate the ID columns
 train <- train[,-1]
 #test <- test[,-1]
-```
-
-##Handle categorical variables:
-
-Next, the goal is to modify categorical variables as a factor so as to work with them.
-```{r}
-train <- train %>% mutate_if(~is.character(.), ~as.factor(.))
-#Nonetheless not all categorical variables are character defined, we modify using factor those who aren´t
-train$OverallQual <- factor(train$OverallQual)
-train$OverallCond <- factor(train$OverallCond)
-train$MSSubClass <- factor(train$MSSubClass)
-
-sort(sapply(train,class))
 ```
 
 ##Missing value problem:
@@ -131,6 +118,7 @@ train$GarageCond <- ifelse(is.na(train$GarageCond),"None",train$GarageCond)
 train$GarageQual <- ifelse(is.na(train$GarageQual),"None",train$GarageQual)
 train$GarageFinish <- ifelse(is.na(train$GarageFinish),"None",train$GarageFinish)
 train$GarageType <- ifelse(is.na(train$GarageType),"None",train$GarageType)
+train$MiscFeature <- ifelse(is.na(train$MiscFeature),"None",train$MiscFeature)
 ```
 
 There are 5 variables that have NA´s and they lack of meaning, for integer ones (LotFrontage, GarageYrBlt and MasVnrArea) we will replace NA for the mean rounded, whereas for the categorical ones (Electrical and MasVnrType), as the percentage of NA is quite small (<1%) we will replace for the mode. 
@@ -143,25 +131,192 @@ train$Electrical <- ifelse(is.na(train$Electrical),"SBrkr",train$Electrical) #Pa
 train$MasVnrType <- ifelse(is.na(train$MasVnrType),"None",train$MasVnrType) #los valores extraidos abajo
 ```
 
+##Handle categorical variables:
+
+Next, the goal is to modify categorical variables as a factor so as to work with them.
+```{r}
+train <- train %>% mutate_if(~is.character(.), ~as.factor(.))
+#Nonetheless not all categorical variables are character defined, we modify using factor those who aren´t
+train$OverallQual <- factor(train$OverallQual)
+train$OverallCond <- factor(train$OverallCond)
+train$MSSubClass <- factor(train$MSSubClass)
+
+sort(sapply(train,class))
+```
+
 ##Numeric data handling (outliers and scaling):
 
 Once we have categorical variables in order, we should focus our attention on quantitative data. 
 ```{r}
-#We extract a dataset only with
+#We extract a dataset only with quantitative data (34 variables)
 num_train_dataset <- train %>% select_if(is.numeric)
 ```
+
+We will focus first on the outliers, observations that are far away from the regression line (*Meter sino una def y aprovechar para bibliografía*). They do not affect the estimated model, unless the observation has high leverage. It tends to increase the variability among the variable affecting the negatively the variability explained by the model, making it become worse. 
+Comparing the maximum values and the means of some of the variables we suspect the existance of outliers due to the huge differences between them. 
+```{r}
+summary(num_train_dataset)
+
+outlier <- num_train_dataset %>% filter(PoolArea >= 50)
+outlier <- num_train_dataset %>% filter(LotArea >= 150000)
+
+library(base)
+cookd(lm) #Creo que no nos sirve, probar con esto: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/influence.measures
+
+#Para el scaling alguien que entienda que mire los graficos de abajo. Yo creo que alguna hay que hacer log.
+```
+
+# Exploratory Analysis
+
+In the first part, we will carry out a descriptive analysis of several variables to understand them better. Graphs will help us to reach this goal, histograms for continuous variables and box-plots for categorical variables.
+
+It would be useful to analyse the categorical variables, seeing most popular categories for each variables.
+
+```{r}
+# Lista de columnas categóricas
+columnas_categoricas <- colnames(train)[sapply(train, is.factor)]
+columnas_categoricas
+
+tablas_frecuencia <- list()
+
+#INTENTO 1
+# Iterar sobre cada columna categórica y crear la tabla de frecuencia
+for (col in columnas_categoricas) {
+  tablas_frecuencia[[col]] <- table(train[[col]])
+}
+
+# Mostrar las tablas de frecuencia
+tablas_frecuencia
+```
+
+HACER BOXPLOTS DE LAS QUE VAYAMOS A EXPLICAR
+
+```{r}
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan", "magenta", "darkgreen", "lightblue")
+
+for (i in 2:13) {
+  col_name <- colnames(num_train_dataset)[i]
+  hist(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 1], 
+       breaks = 5)
+}
+```
+
+```{r}
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan", "magenta", "darkgreen","lightblue")
+
+for (i in 14:25) {
+  col_name <- colnames(num_train_dataset)[i]
+  hist(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 13],
+       breaks = 5)
+}
+```
+
+```{r}
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan")
+
+for (i in 26:34) {
+  col_name <- colnames(num_train_dataset)[i]
+  hist(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 25],
+       breaks = 5)
+}
+```
+
+
+Moreover, summary statistics are a useful tool for analyzing continuous variables (*YA VISTO ARRIBA*).
 
 ```{r}
 measures <- function(x){
   c(mean(x), median(x), mode(x), var(x), sd(x), skew(x), kurtosi(x))
 }
-
 ```
 
 
+##Correlation:
+To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
+
+```{r, fig.height=7,fig.width=7}
+correlation_matrix <- cor(num_train_dataset)
+rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
+corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7)
+#No consigo que cuadren los axis con los puntos que representan
+#Correlacion nula con 8,13,20,22,23,24,26 y 34
+#Baja con 3,9,21,25,28,29,19 y 30(ULTIMOS CASOS ES -)
+#Media con 2,6,7,12,17,18,
+#Alta con 4,5,10,11,14,16,27,33 (32,15)
+
+#high_correlation_values <- correlation_matrix[correlation_matrix > 0.7]
+#print(high_correlation_values)
+high_correlation_indices <- which(correlation_matrix > 0.7, arr.ind = TRUE)
+
+# Muestra los pares de variables que cumplen con la condición
+for (i in 1:nrow(high_correlation_indices)) {
+  row_index <- high_correlation_indices[i, 1]
+  col_index <- high_correlation_indices[i, 2]
+  var1 <- colnames(correlation_matrix)[row_index]
+  var2 <- colnames(correlation_matrix)[col_index]
+  cat("Correlation between", var1, "and", var2, ":", correlation_matrix[row_index, col_index], "\n")
+}
+
+print(high_correlation_indices)
+#Este código se me ha quedado a medias
+```
+
+The only variable that are negatively correlated with house price are EnclosedPorch and KitchenAbvGr, but as the correlation of both is quite small we will not worry to much. 
+The variables that are highly correlated are:
+-YearBuild:
+-YearRemodAdd:
+-TotalBsmtSF:
+-X1stFloorSF:
+-GrLivArea:
+-GarageArea:
+-FullBath:
+-GarageCars:
+
+(Fireplaces, GarageYrBuild)
+
+Nonetheless, correlation has other important use, help to find multicollinearity among variables.
 
 
+How to deal with multicolinearity?: (*Slides*)
+-Ignore it
+-Use antoher estimator other than Least Square
+-Get rid of these redundant variables using variable selection techniques.
 
+##ANOVA:
+
+
+#Model:
+##Variable selection:
+Tema 3
+Ideas en base a Lab1:
+
+- Data preprocessing: Remove unnecesary columns such as ID, in Lab1 remove characteristics with one observation. Check that categorical variables are factors. Check summary to check everything is correct.
+
+- After datapreprocessing do Exploratory analysis: Correlations (ggpairs, in Lab 2 values and colors), histograms of predictors, plots of response vs some predictors (only comment important ones)
+
+- Modeling: regsubsets only when continuous, Lab1 use stepAIC... Check model assumptions.
+
+- Prediction
+
+##Codigo extra que creo que se puede eliminar:
 
 ```{r}
 # Lista de variables categóricas
@@ -207,40 +362,8 @@ for (col in columnas_categoricas) {
 }
 ```
 
-
-# Exploratory Analysis
-
-In the first part, we will carry out a descriptive analysis of several variables to understand them better. Graphs will help us to reach this goal, histograms for continuous variables and box-plots for categorical variables.
-
-
-
-It would be useful to analyse the categorical varaibles, seeing most popular categories for each variables.
-
 ```{r}
-# Lista de columnas categóricas
-columnas_categoricas <- colnames(train)[sapply(train, is.factor)]
-columnas_categoricas
-
-tablas_frecuencia <- list()
-
-#INTENTO 1
-# Iterar sobre cada columna categórica y crear la tabla de frecuencia
-for (col in columnas_categoricas) {
-  tablas_frecuencia[[col]] <- table(train[[col]])
-}
-
-# Mostrar las tablas de frecuencia
-tablas_frecuencia
-
-```
-
-HACER BOXPLOTS
-
-```{r}
-hist(train$variable, bins = 10)
-```
-
-```{r}
+#Esta es otra alternativa pero peor
 plot1 <-
   ggplot(train, aes(LotFrontage)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Linear feet of street connected to property")
 plot2 <-
@@ -316,27 +439,5 @@ grid.arrange(
   top = "Histograms"
 )
 ```
-
-
-
-Moreover, summary statistics are a useful tool for analyzing continuous variables.
-
-```{r}
-measures <- function(x){
-  c(mean(x), median(x), mode(x), var(x), sd(x), skew(x), kurtosi(x))
-}
-```
-
-
-
-Ideas en base a Lab1:
-
-- Data preprocessing: Remove unnecesary columns such as ID, in Lab1 remove characteristics with one observation. Check that categorical variables are factors. Check summary to check everything is correct.
-
-- After datapreprocessing do Exploratory analysis: Correlations (ggpairs, in Lab 2 values and colors), histograms of predictors, plots of response vs some predictors (only comment important ones)
-
-- Modeling: regsubsets only when continuous, Lab1 use stepAIC... Check model assumptions.
-
-- Prediction
 
 
