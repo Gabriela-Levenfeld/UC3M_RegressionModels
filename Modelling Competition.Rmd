@@ -121,30 +121,41 @@ train$GarageType <- ifelse(is.na(train$GarageType),"None",train$GarageType)
 train$MiscFeature <- ifelse(is.na(train$MiscFeature),"None",train$MiscFeature)
 train$MasVnrType <- ifelse(is.na(train$MasVnrType),"None",train$MasVnrType)
 ```
+
 ```{r garage}
 train$GarageArea<- ifelse(train$GarageArea==0,NA,train$GarageArea)
 train$GarageCars<- ifelse(train$GarageCars==0,NA,train$GarageCars)
 ```
+
 ```{r garage}
 train$MasVnrArea<-ifelse(train$MasVnrArea==0,NA,train$MasVnrArea)
 ```
 There are 5 variables that have NA´s and they lack of meaning, for integer ones (LotFrontage, GarageYrBlt and MasVnrArea) we will replace NA for the mean rounded, whereas for the categorical ones (Electrical and MasVnrType), as the percentage of NA is quite small (<1%) we will replace for the mode. 
 
 ```{r}
-train$LotFrontage <- ifelse(is.na(train$LotFrontage),round(mean(train$LotFrontage,na.rm=TRUE)),train$LotFrontage)
 train$Electrical <- ifelse(is.na(train$Electrical),"SBrkr",train$Electrical) #Imputation with the mode for only 1 observation
 ```
+
 ```{r frontage}
 # Calcular la mediana por grupo utilizando tapply
 medianas_por_grupo <- tapply(train$LotFrontage, train$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
 
 # Sustituir NA por la mediana correspondiente por grupo
-train$LotFrontage <- ifelse(is.na(train$LotFrontage), medianas_por_grupo[as.character(train$Neighborhood)],train$LotFrontage )
-
+train$LotFrontage <- ifelse(is.na(train$LotFrontage), medianas_por_grupo[match(train$Neighborhood,names(medianas_por_grupo))],
+                                   train$LotFrontage)
 ```
-*CORREGIR*
 
-*MEDIANAS POR GRUPO ESTÁ BIEN. HAY QUE TERMINAR EL CODIGO QUE LO SUSTITUYA*
+```{r}
+#Solo sirve para comprobar
+train[561,2] #Variable LotFrontage
+train[561,44] #Varible Neighborhood
+
+#Inicialmente tenemos 259 missing values.
+sum(is.na(train$LotFrontage))
+# Ahora ya tenemos 0 missing values
+```
+
+*CORREGIR*
 
 **HAY QUE HACER EL DUMMY DE SI TIENE GARAGE, masvnr**
 
