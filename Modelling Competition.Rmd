@@ -41,17 +41,16 @@ library(car)
 library(scales)
 library(MASS)
 library(lmtest)
+library(base)
 ```
 
 # Data Preparation
 
-First step would be to load both databases, train and test.
+First step would be to load both databases, test and test.
 
 ```{r}
 train <- read.csv("train.csv", sep=",")
 test <- read.csv("test.csv", sep=",")
-
-column_diff <- setdiff(names(train), names(test))
 ```
 
 We are going to work with the target variable (SalePrice) in log
@@ -60,12 +59,13 @@ We are going to work with the target variable (SalePrice) in log
 train$SalePrice<-log(train$SalePrice)
 ```
 
-## We make EDA (Exploratory Data Analysis) of the train set
+## We make EDA (Exploratory Data Analysis) of the test set
 
-We are only going to work with the train set due to the test set is for studying the accuracy of the model.
+We are only going to work with the test set due to the test set is for studying the accuracy of the model.
 
 ```{r}
 skim(train) 
+skim(test)
 #Presents results for every column; the statistics it provides depend on the class of the variable
 ```
 
@@ -75,7 +75,7 @@ skim(train)
 # Ordenar las columnas por tipo de variable (Las 25 primeras son continuas)
 train <- train[,c(1,81,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,48,49,50,51,52,53,55,57,62,77,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,54,56,58,59,61,64,65,66,73,74,75,79,80)]
 
-#test <- test[,c(1,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,48,49,50,51,52,53,54,55,56,57,58,59,61,62,64,65,66,73,74,75,77,79,80)]
+test <- test[,c(1,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,48,49,50,51,52,53,55,57,62,77,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,54,56,58,59,61,64,65,66,73,74,75,79,80)]
 ```
 
 
@@ -91,15 +91,17 @@ test <- test[,-1]
 Looking at the dataset, we observe that some of the variables have great deal of NA values. Therefore, it may interesting to quantify these numbers and later think on future actions.
 
 ```{r}
-# Counting NA: TRAIN and express in %
-Number_NA<-(colSums(is.na(train))/nrow(train))*100
-sort(Number_NA,decreasing = TRUE)
+# Counting NA: train and express in %
+Number_NA_train<-(colSums(is.na(train))/nrow(train))*100
+sort(Number_NA_train,decreasing = TRUE)
 ```
 
 ```{r}
-# Counting NA: TEST y expresado en %
-#(colSums(is.na(test))/nrow(train))*100
+# Counting NA: test and express in %
+Number_NA_test<-(colSums(is.na(test))/nrow(test))*100
+sort(Number_NA_test,decreasing = TRUE)
 ```
+
 
 What should we then do this those variables that have more missing values than existing ones? Maintaining them can we a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. 
 However, NA values have a meaning in most of the cases where its percentage is high. For example, in PoolQC it means that the house does not have pool, in Alley means that the house no alley access. Consequently, we should change NA for values so that they will later appear when displaying these variables values. 
@@ -120,16 +122,36 @@ train$GarageFinish <- ifelse(is.na(train$GarageFinish),"None",train$GarageFinish
 train$GarageType <- ifelse(is.na(train$GarageType),"None",train$GarageType)
 train$MiscFeature <- ifelse(is.na(train$MiscFeature),"None",train$MiscFeature)
 train$MasVnrType <- ifelse(is.na(train$MasVnrType),"None",train$MasVnrType)
+
+test$PoolQC <- ifelse(is.na(test$PoolQC),"None",test$PoolQC)
+test$Fence <- ifelse(is.na(test$Fence),"None",test$Fence)
+test$Alley <- ifelse(is.na(test$Alley),"None",test$Alley)
+test$BsmtFinType1 <- ifelse(is.na(test$BsmtFinType1),"None",test$BsmtFinType1)
+test$BsmtCond <- ifelse(is.na(test$BsmtCond),"None",test$BsmtCond)
+test$BsmtQual <- ifelse(is.na(test$BsmtQual),"None",test$BsmtQual)
+test$BsmtFinType2 <- ifelse(is.na(test$BsmtFinType2),"None",test$BsmtFinType2)
+test$BsmtExposure <- ifelse(is.na(test$BsmtExposure),"None",test$BsmtExposure)
+test$FireplaceQu <- ifelse(is.na(test$FireplaceQu),"None",test$FireplaceQu)
+test$GarageCond <- ifelse(is.na(test$GarageCond),"None",test$GarageCond)
+test$GarageQual <- ifelse(is.na(test$GarageQual),"None",test$GarageQual)
+test$GarageFinish <- ifelse(is.na(test$GarageFinish),"None",test$GarageFinish)
+test$GarageType <- ifelse(is.na(test$GarageType),"None",test$GarageType)
+test$MiscFeature <- ifelse(is.na(test$MiscFeature),"None",test$MiscFeature)
+test$MasVnrType <- ifelse(is.na(test$MasVnrType),"None",test$MasVnrType)
 ```
 
 ```{r garage}
 train$GarageArea<- ifelse(train$GarageArea==0,NA,train$GarageArea)
 train$GarageCars<- ifelse(train$GarageCars==0,NA,train$GarageCars)
+train$MasVnrArea<-ifelse(train$MasVnrArea==0,NA,train$MasVnrArea)
+train$GarageYrBlt<-ifelse(train$GarageYrBlt==0,NA,train$GarageYrBlt)
+
+test$GarageArea<- ifelse(test$GarageArea==0,NA,test$GarageArea)
+test$GarageCars<- ifelse(test$GarageCars==0,NA,test$GarageCars)
+test$MasVnrArea<-ifelse(test$MasVnrArea==0,NA,test$MasVnrArea)
+test$GarageYrBlt<-ifelse(test$GarageYrBlt==0,NA,test$GarageYrBlt)
 ```
 
-```{r garage}
-train$MasVnrArea<-ifelse(train$MasVnrArea==0,NA,train$MasVnrArea)
-```
 There are 5 variables that have NA´s and they lack of meaning, for integer ones (LotFrontage, GarageYrBlt and MasVnrArea) we will replace NA for the mean rounded, whereas for the categorical ones (Electrical and MasVnrType), as the percentage of NA is quite small (<1%) we will replace for the mode. 
 
 ```{r}
@@ -138,35 +160,58 @@ train$Electrical <- ifelse(is.na(train$Electrical),"SBrkr",train$Electrical) #Im
 
 ```{r frontage}
 # Calcular la mediana por grupo utilizando tapply
-medianas_por_grupo <- tapply(train$LotFrontage, train$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
+medianas_por_grupo_train <- tapply(train$LotFrontage, train$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
+medianas_por_grupo_test <- tapply(test$LotFrontage, test$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
 
 # Sustituir NA por la mediana correspondiente por grupo
-train$LotFrontage <- ifelse(is.na(train$LotFrontage), medianas_por_grupo[match(train$Neighborhood,names(medianas_por_grupo))],
+train$LotFrontage <- ifelse(is.na(train$LotFrontage), medianas_por_grupo_train[match(train$Neighborhood,names(medianas_por_grupo_train))],
                                    train$LotFrontage)
+
+test$LotFrontage <- ifelse(is.na(test$LotFrontage), medianas_por_grupo_test[match(test$Neighborhood,names(medianas_por_grupo_test))],
+                                   test$LotFrontage)
+
 ```
 
 ```{r}
-#Solo sirve para comprobar
-train[561,2] #Variable LotFrontage
-train[561,44] #Varible Neighborhood
-
 #Inicialmente tenemos 259 missing values.
 sum(is.na(train$LotFrontage))
-# Ahora ya tenemos 0 missing values
+sum(is.na(test$LotFrontage))
+# Ahora ya tenemos 0 missing values
+
+```
+We will fix the missing values in the test data 
+
+```{r}
+test$SaleType <- ifelse(is.na(test$SaleType),"WD",test$SaleType)
+test$KitchenQual <- ifelse(is.na(test$KitchenQual),"TA",test$KitchenQual)
+test$Exterior2nd <- ifelse(is.na(test$Exterior2nd),"VinylSd",test$Exterior2nd)
+test$Exterior1st <- ifelse(is.na(test$Exterior1st),"VinylSd",test$Exterior1st)
+test$TotalBsmtSF<- ifelse(is.na(test$TotalBsmtSF),median(na.omit(test$TotalBsmtSF)),test$TotalBsmtSF) #numeric
+test$BsmtUnfSF<- ifelse(is.na(test$BsmtUnfSF),median(na.omit(test$BsmtUnfSF)),test$BsmtUnfSF) #numeric
+test$BsmtFinSF2<- ifelse(is.na(test$BsmtFinSF2),median(na.omit(test$BsmtFinSF2)),test$BsmtFinSF2) #numeric
+test$BsmtFinSF1<- ifelse(is.na(test$BsmtFinSF1),median(na.omit(test$BsmtFinSF1)),test$BsmtFinSF1) #numeric
+test$BsmtFullBath<- ifelse(is.na(test$BsmtFullBath),median(na.omit(test$BsmtFullBath)),test$BsmtFullBath) #discrete
+test$BsmtHalfBath<- ifelse(is.na(test$BsmtHalfBath),median(na.omit(test$BsmtHalfBath)),test$BsmtHalfBath) #discrete
+test$Utilities<- ifelse(is.na(test$Utilities),"AllPub",test$Utilities)
+test$Functional<- ifelse(is.na(test$Functional),"Typ",test$Functional)
+test$MSZoning<- ifelse(is.na(test$MSZoning),"RL",test$MSZoning)
 ```
 
-*CORREGIR*
 
 **HAY QUE HACER EL DUMMY DE SI TIENE GARAGE, masvnr**
 
+Check if there are duplicates
+
 ```{r duplicates}
 sum(duplicated(train))
+sum(duplicated(test))
 ```
 
 
-##Handle categorical variables:
+## Handle categorical variables:
 
 Next, the goal is to modify categorical variables as a factor so as to work with them.
+
 ```{r}
 train <- train %>% mutate_if(~is.character(.), ~as.factor(.))
 #Nonetheless not all categorical variables are character defined, we modify using factor those who aren´t
@@ -174,7 +219,12 @@ train$OverallQual <- factor(train$OverallQual)
 train$OverallCond <- factor(train$OverallCond)
 train$MSSubClass <- factor(train$MSSubClass)
 
-sort(sapply(train,class))
+test <- test %>% mutate_if(~is.character(.), ~as.factor(.))
+#Nonetheless not all categorical variables are character defined, we modify using factor those who aren´t
+test$OverallQual <- factor(test$OverallQual)
+test$OverallCond <- factor(test$OverallCond)
+test$MSSubClass <- factor(test$MSSubClass)
+
 ```
 
 **CON OVERALL's NO SABEMOS AUN SI TRATAR COMO NUMERICA O COMO CATEGORICA**
@@ -182,20 +232,25 @@ sort(sapply(train,class))
 ## Numeric data handling (outliers and scaling):
 
 Once we have categorical variables in order, we should focus our attention on quantitative data. 
+
 ```{r}
 #We extract a dataset only with quantitative data (34 variables)
 num_train_dataset <- train %>% select_if(is.numeric)
+num_test_dataset <- test %>% select_if(is.numeric)
 ```
 
 We will focus first on the outliers, observations that are far away from the regression line (*Meter sino una def y aprovechar para bibliografía*). They do not affect the estimated model, unless the observation has high leverage. It tends to increase the variability among the variable affecting the negatively the variability explained by the model, making it become worse. 
 Comparing the maximum values and the means of some of the variables we suspect the existance of outliers due to the huge differences between them. 
+
 ```{r}
 summary(num_train_dataset)
+summary(num_test_dataset)
 
-outlier <- num_train_dataset %>% filter(PoolArea >= 50)
-outlier <- num_train_dataset %>% filter(LotArea >= 150000)
+outlier1 <- num_train_dataset %>% filter(PoolArea >= 50)
+outlier2 <- num_test_dataset %>% filter(PoolArea >= 50)
+outlier3 <- num_train_dataset %>% filter(LotArea >= 150000)
+outlier4 <- num_test_dataset %>% filter(LotArea >= 150000)
 
-library(base)
 #cooks.distance() #Creo que no nos sirve, probar con esto: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/influence.measures
 
 #Para el scaling alguien que entienda que mire los graficos de abajo. Yo creo que alguna hay que hacer log.
@@ -207,22 +262,101 @@ In the first part, we will carry out a descriptive analysis of several variables
 
 It would be useful to analyse the categorical variables, seeing most popular categories for each variables.
 
+
 ```{r}
-# Lista de columnas categóricas
-columnas_categoricas <- colnames(train)[sapply(train, is.factor)]
-columnas_categoricas
-
-tablas_frecuencia <- list()
-
-#INTENTO 1
-# Iterar sobre cada columna categórica y crear la tabla de frecuencia
-for (col in columnas_categoricas) {
-  tablas_frecuencia[[col]] <- table(train[[col]])
+obtener_diferencia_categorias <- function(dataframe1, dataframe2) {
+  nombres_categorias_df1 <- list()
+  nombres_categorias_df2 <- list()
+  
+  for (col in names(dataframe1)) {
+    nombres_categorias_df1[[col]] <- sort(unique(dataframe1[[col]]))
+  }
+  
+  for (col in names(dataframe2)) {
+    nombres_categorias_df2[[col]] <- sort(unique(dataframe2[[col]]))
+  }
+  
+  diferencias <- list()
+  
+  # Obtener las diferencias entre categorías de dataframe1 y dataframe2
+  for (col_name in names(dataframe1)) {
+    if (col_name %in% names(dataframe2)) {
+      diff <- setdiff(nombres_categorias_df1[[col_name]], nombres_categorias_df2[[col_name]])
+      if (length(diff) > 0) {
+        diferencias[[col_name]] <- diff
+      }
+    } else {
+      diferencias[[col_name]] <- nombres_categorias_df1[[col_name]]
+    }
+  }
+  
+  return(diferencias)
 }
 
-# Mostrar las tablas de frecuencia
-tablas_frecuencia
+# Ejemplo de uso
+# Supongamos que tienes dos dataframes: 'dataframe_1' y 'dataframe_2'
+# Llama a la función y pasa los dataframes como argumentos
+categorias_diferentes <- obtener_diferencia_categorias(train[,35:80], test[,35:79])
+
+# Muestra los nombres de las categorías únicas presentes en dataframe_1 pero no en dataframe_2
+print("Nombres de categorías presentes en dataframe_1 pero no en dataframe_2:")
+print(categorias_diferentes)
+
 ```
+
+
+Now, we impute those categories that appear either test or train but not in the other.
+
+```{r}
+# We delete variable Utilities because is constant (we deleted the NoSeWa category because it is train but not in test)
+train=train[,-41]
+test=test[,-40]
+
+# Condition2
+train$Condition2 <- replace(train$Condition2, train$Condition2 == c("RRAe","RRAn","RRNn"), "Norm")
+train$Condition2 <- droplevels(train$Condition2, exclude = c("RRAe","RRAn","RRNn"))
+
+# HouseStyle
+train$HouseStyle <- replace(train$HouseStyle, train$HouseStyle == "2.5Fin", "1Story")
+train$HouseStyle <- droplevels(train$HouseStyle, exclude= "1Story")
+
+# Roofmatl
+train$RoofMatl <- replace(train$RoofMatl, train$RoofMatl == c("ClyTile","Membran","Metal","Roll"), "CompShg")
+train$RoofMatl <- droplevels(train$RoofMatl, exclude =  c("ClyTile","Membran","Metal","Roll"))
+
+# Exterior1st
+train$Exterior1st <- replace(train$Exterior1st, train$Exterior1st == c("ImStucc","Stone"), "VinylSd")
+train$Exterior1st <- droplevels(train$Exterior1st, exclude =  c("ImStucc","Stone"))
+
+# Exterior2st
+train$Exterior2nd <- replace(train$Exterior2nd, train$Exterior2nd == "Other", "VinylSd")
+train$Exterior2nd <- droplevels(train$Exterior2nd, exclude =  "Other")
+
+# Heating
+train$Heating <- replace(train$Heating, train$Heating == c("Floor","OthW"), "GasA")
+train$Heating <- droplevels(train$Heating, exclude =  c("Floor","OthW"))
+
+# Electrical
+train$Electrical <- replace(train$Electrical, train$Electrical == "Mix", "SBrKr")
+train$Electrical <- droplevels(train$Electrical, exclude =  "Mix")
+
+# GarageQual
+train$GarageQual <- replace(train$GarageQual, train$GarageQual == "Ex", "TA")
+train$GarageQual <- droplevels(train$GarageQual, exclude =  "Ex")
+
+# PoolQC
+train$PoolQC <- replace(train$PoolQC, train$PoolQC == "Fa", "None")
+train$PoolQC <- droplevels(train$PoolQC, exclude =  "Fa")
+
+# MiscFeature
+train$MiscFeature <- replace(train$MiscFeature, train$MiscFeature == "TenC", "None")
+train$MiscFeature <- droplevels(train$MiscFeature, exclude =  "TenC")
+
+# MSSubClass
+test$MSSubClass <- replace(test$MSSubClass, test$MSSubClass == '150', '20')
+test$MSSubClass <- droplevels(test$MSSubClass, exclude =  '150')
+```
+
 
 **HACER BOXPLOTS DE LAS QUE VAYAMOS A EXPLICAR**
 
@@ -257,7 +391,7 @@ for (i in 14:25) {
 }
 ```
 ```{r}
-par(mfrow = c(3, 4))
+par(mfrow = c(3, 3))
 colours <- c("red", "blue", "green",
              "orange", "purple", "pink",
              "brown", "gray", "cyan")
@@ -334,7 +468,7 @@ measures <- function(x){
 To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
 
 ```{r, fig.height=7,fig.width=7}
-correlation_matrix <- cor(num_train_dataset)
+correlation_matrix <- cor(num_test_dataset)
 rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
 corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7)
 #No consigo que cuadren los axis con los puntos que representan
@@ -419,7 +553,7 @@ obtener_conteo <- function(df, var) {
 
 # Obtener el conteo de observaciones para cada variable categórica
 for (variable in variables_categoricas) {
-  obtener_conteo(train, !!as.name(variable))
+  obtener_conteo(test, !!as.name(variable))
 }
 ```
 
@@ -427,70 +561,70 @@ for (variable in variables_categoricas) {
 umbral <- 2 # Definir el umbral mínimo de instancias
 
 # Lista de columnas categóricas
-columnas_categoricas <- colnames(train)[sapply(train, is.factor)]
+columnas_categoricas <- colnames(test)[sapply(test, is.factor)]
 
 # Iterar sobre cada columna categórica y conservar las categorías con más de 'umbral' instancias
 for (col in columnas_categoricas) {
-  filtro <- train %>% count(!!sym(col)) %>% filter(n > umbral)
-  train <- train[train[[col]] %in% filtro[[col]], ]
-  train[[col]] <- factor(train[[col]], levels = unique(train[[col]]))
+  filtro <- test %>% count(!!sym(col)) %>% filter(n > umbral)
+  test <- test[test[[col]] %in% filtro[[col]], ]
+  test[[col]] <- factor(test[[col]], levels = unique(test[[col]]))
 }
 
 # Mostrar las categorías conservadas en cada columna categórica
 for (col in columnas_categoricas) {
   cat(paste("Columna:", col, "\n"))
-  print(table(train[[col]]))
+  print(table(test[[col]]))
 }
 ```
 
 ```{r}
 #Esta es otra alternativa pero peor
 plot1 <-
-  ggplot(train, aes(LotFrontage)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Linear feet of street connected to property")
+  ggplot(test, aes(LotFrontage)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Linear feet of street connected to property")
 plot2 <-
-  ggplot(train, aes(LotArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Lot size in square feet ")
+  ggplot(test, aes(LotArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Lot size in square feet ")
 plot3 <-
-  ggplot(train, aes(YearBuilt)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Original construction date")
+  ggplot(test, aes(YearBuilt)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Original construction date")
 plot4 <-
-  ggplot(train, aes(YearRemodAdd)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Remodel date")
+  ggplot(test, aes(YearRemodAdd)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Remodel date")
 plot5 <-
-  ggplot(train, aes(MasVnrArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Masonry veneer area")
+  ggplot(test, aes(MasVnrArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Masonry veneer area")
 plot6 <-
-  ggplot(train, aes(BsmtFinSF1)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Type 1 finished square feet")
+  ggplot(test, aes(BsmtFinSF1)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Type 1 finished square feet")
 plot7 <-
-  ggplot(train, aes(BsmtFinSF2)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Type 2 finished square feet")
+  ggplot(test, aes(BsmtFinSF2)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Type 2 finished square feet")
 plot8 <-
-  ggplot(train, aes(BsmtUnfSF)) + geom_histogram(fill = "lightblue",  bins = 10) + labs(title ="Unfinished sq feet of basement area")
+  ggplot(test, aes(BsmtUnfSF)) + geom_histogram(fill = "lightblue",  bins = 10) + labs(title ="Unfinished sq feet of basement area")
 plot9 <-
-  ggplot(train, aes(TotalBsmtSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Total sq feet of basement area")
+  ggplot(test, aes(TotalBsmtSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Total sq feet of basement area")
 plot10 <-
-  ggplot(train, aes(X1stFlrSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="1st Floor sq feet")
+  ggplot(test, aes(X1stFlrSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="1st Floor sq feet")
 plot11 <-
-  ggplot(train, aes(X2ndFlrSF)) + geom_histogram(fill = "lightblue",  bins = 10) + labs(title ="2nd floor sq feet ")
+  ggplot(test, aes(X2ndFlrSF)) + geom_histogram(fill = "lightblue",  bins = 10) + labs(title ="2nd floor sq feet ")
 plot12 <-
-  ggplot(train, aes(LowQualFinSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Low quality finished sq feet")
+  ggplot(test, aes(LowQualFinSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Low quality finished sq feet")
 plot13 <-
-  ggplot(train, aes(GrLivArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Above grade living area sq feet")
+  ggplot(test, aes(GrLivArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Above grade living area sq feet")
 plot14 <-
-  ggplot(train, aes(GarageYrBlt)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Year garage was built")
+  ggplot(test, aes(GarageYrBlt)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Year garage was built")
 plot15 <-
-  ggplot(train, aes(GarageArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Size of garage in sq feet ")
+  ggplot(test, aes(GarageArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Size of garage in sq feet ")
 plot16 <-
-  ggplot(train, aes(WoodDeckSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Wood deck area in sq feet ")
+  ggplot(test, aes(WoodDeckSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Wood deck area in sq feet ")
 plot17 <-
-  ggplot(train, aes(OpenPorchSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Open porch area in sq feet")
+  ggplot(test, aes(OpenPorchSF)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Open porch area in sq feet")
 plot18 <-
-  ggplot(train, aes(EnclosedPorch)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Enclosed porch area in sq feet")
+  ggplot(test, aes(EnclosedPorch)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Enclosed porch area in sq feet")
 plot19 <-
-  ggplot(train, aes(X3SsnPorch)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="3 season porch area in sq feet")
+  ggplot(test, aes(X3SsnPorch)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="3 season porch area in sq feet")
 plot20 <-
-  ggplot(train, aes(ScreenPorch)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Screen porch area in sq feet")
+  ggplot(test, aes(ScreenPorch)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Screen porch area in sq feet")
 plot21 <-
-  ggplot(train, aes(PoolArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Pool area in sq feet")
+  ggplot(test, aes(PoolArea)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Pool area in sq feet")
 plot22 <-
-  ggplot(train, aes(MiscVal)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="$Value of miscellaneous feature")
+  ggplot(test, aes(MiscVal)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="$Value of miscellaneous feature")
 plot23 <-
-  ggplot(train, aes(YrSold)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Year Sold")
+  ggplot(test, aes(YrSold)) + geom_histogram(fill = "lightblue", bins = 10) + labs(title ="Year Sold")
 
 grid.arrange(
   plot1,
@@ -522,3 +656,6 @@ grid.arrange(
 ```
 
 
+train$GarageArea<- ifelse(train$GarageArea==0,NA,train$GarageArea)
+train$GarageArea<- ifelse(train$GarageArea==0,NA,train$GarageArea)
+train$GarageCars<- ifelse(train$GarageCars==0,NA,train$GarageCars)
