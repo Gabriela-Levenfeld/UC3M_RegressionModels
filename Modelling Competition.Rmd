@@ -454,6 +454,18 @@ for (i in 26:34) {
 }
 ```
 
+```{r, warning=FALSE, message=FALSE}
+ggpairs(train[,1:12],aes(fill="pink"),
+        lower = list(continuous = "points"),
+        title = "Scatter Plot Matrix") +
+  theme_light(base_size=8)
+```
+```{r, warning=FALSE, message=FALSE}
+ggpairs(train[,c(1,13:24)],aes(fill="pink"),
+        lower = list(continuous = "points"),
+        title = "Scatter Plot Matrix") +
+  theme_light(base_size=8)
+```
 
 Moreover, summary statistics are a useful tool for analyzing continuous variables (*YA VISTO ARRIBA*).
 
