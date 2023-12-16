@@ -454,18 +454,86 @@ for (i in 26:34) {
 }
 ```
 
+Next step is to get the scatter plot for the quantitative features (24 variables) in order to decide which transformation we will apply them (just if it is necessary).
+
 ```{r, warning=FALSE, message=FALSE}
 ggpairs(train[,1:12],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
+
 ```{r, warning=FALSE, message=FALSE}
 ggpairs(train[,c(1,13:24)],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
+
+**Negative skweness**:
+-   YearBuilt, YearRemodAdd, GarageYrBlt.
+-   For this variables we could apply a ^2 tranformation. However after trying this, we observed that there is no any improvement.
+
+**Positive skweness**:
+-   The rest of the vairables have positive skewness, so the proper transformation will be a log tranformation.
+
+**Others**
+-   YrSold; variable rara -> Buscar tranformación.
+
+```{r warning=FALSE, message=FALSE,echo=FALSE}
+library(psych)
+library(pander)
+skewness <- round(skew(train[,1:24]), 1)
+result_df <- data.frame(variable = colnames(train[,1:24]), skewness = skewness)
+pander(result_df)
+```
+
+
+```{r}
+# Check if the quantitative feature has a cero or not. This will influence our choice for the traanformation
+counter <- 0
+for (i in head(names(train), 24)) {
+  if (any(!is.na(train[[i]]) & train[[i]] == 0)) {
+    counter <- counter + 1
+    print(paste("Column '", i, "' has at least one zero value.", sep = ""))
+  }
+}
+```
+
+```{r apply_transformations}
+# Positive skewness
+# 1/x because there are severe skewness
+train[,c(3,11)] <- 1/train[,c(3,11)]
+# log
+train[,c(2)] <- log(train[,c(2)])
+#log+1 because there are 0 values on that feature
+train[,c(7,8,9,16,17,18)] <- log(train[,c(7,8,9,16,17,18)]+1)
+```
+
+In order to check if we achive the normality distributions on the variables thanks to the transformations apply, we plot again the scatters plots.
+
+```{r, warning=FALSE, message=FALSE}
+ggpairs(train[,1:12],aes(fill="pink"),
+        lower = list(continuous = "points"),
+        title = "Scatter Plot Matrix") +
+  theme_light(base_size=8)
+```
+
+```{r, warning=FALSE, message=FALSE}
+ggpairs(train[,c(1,13:24)],aes(fill="pink"),
+        lower = list(continuous = "points"),
+        title = "Scatter Plot Matrix") +
+  theme_light(base_size=8)
+```
+
+
+
+
+
+
+
+
+
 
 Moreover, summary statistics are a useful tool for analyzing continuous variables (*YA VISTO ARRIBA*).
 
