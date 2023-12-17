@@ -42,6 +42,7 @@ library(scales)
 library(MASS)
 library(lmtest)
 library(base)
+library(corrplot)
 ```
 
 # Data Preparation
@@ -498,15 +499,15 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
   theme_light(base_size=8)
 ```
 
-**Negative skweness**:
+**Negative skeweness**:
 -   YearBuilt, YearRemodAdd, GarageYrBlt.
--   For this variables we could apply a ^2 tranformation. However after trying this, we observed that there is no any improvement.
+-   For this variables we could apply a ^2 transformation. However after trying this, we observed that there is no any improvement.
 
-**Positive skweness**:
--   The rest of the vairables have positive skewness, so the proper transformation will be a log tranformation.
+**Positive skeweness**:
+-   The rest of the variables have positive skewness, so the proper transformation will be a log transformation. After trying to transform these variables, there is no improvement in some of them, so they will remain as the original ones. It is worth to mention that we have done log(X+1) so as to avoid errors with zero values. We have applied it to: BsmtFinSF1, BsmtFinSF2, BsmtUnfSF, GarageArea, WoodDeckSF and OpenPorchSF.
 
 **Others**
--   YrSold; variable rara -> Buscar tranformación.
+-   YrSold;-> This variable has seasonality, there are some years where more sales occur. This makes sense as could depend on the economic cycles. *Buscar tanformación*.
 
 ```{r warning=FALSE, message=FALSE,echo=FALSE}
 library(psych)
@@ -554,25 +555,14 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
   theme_light(base_size=8)
 ```
 
-## Measures
-
-Moreover, summary statistics are a useful tool for analyzing continuous variables (*YA VISTO ARRIBA*).
-
-```{r}
-measures <- function(x){
-  c(mean(x), median(x), mode(x), var(x), sd(x), skew(x), kurtosi(x))
-}
-```
-
-
 ## Correlation
 To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
 
 ```{r, fig.height=7,fig.width=7}
-correlation_matrix <- cor(num_test_dataset)
+correlation_matrix <- cor(num_train_dataset, na.rm = TRUE)
 rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
 corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7)
-#No consigo que cuadren los axis con los puntos que representan
+
 #Correlacion nula con 8,13,20,22,23,24,26 y 34
 #Baja con 3,9,21,25,28,29,19 y 30(ULTIMOS CASOS ES -)
 #Media con 2,6,7,12,17,18,
@@ -580,6 +570,7 @@ corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlat
 
 #high_correlation_values <- correlation_matrix[correlation_matrix > 0.7]
 #print(high_correlation_values)
+
 high_correlation_indices <- which(correlation_matrix > 0.7, arr.ind = TRUE)
 
 # Muestra los pares de variables que cumplen con la condición
@@ -611,7 +602,7 @@ The variables that are highly correlated are:
 Nonetheless, correlation has other important use, help to find multicollinearity among variables.
 
 
-How to deal with multicolinearity?: (*Slides*)
+How to deal with multicolinearity?: (*Slides T2 o T4- QQPlot*)
 -Ignore it
 -Use antoher estimator other than Least Square
 -Get rid of these redundant variables using variable selection techniques.
@@ -620,6 +611,30 @@ How to deal with multicolinearity?: (*Slides*)
 
 
 #Model:
+
+```{r}
+model1 <- lm(SalePrice~.-MasVnrArea-MasVnrType-GarageCars-GarageYrBlt-YearRemodAdd-GarageArea-GarageType-GarageFinish-GarageQual-GarageCond-dummy_garage-dummy_masvnr-dummy_RemodYear + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond), data=train)
+```
+
+```{r}
+nombres <- names(train)
+nombres
+```
+
+variables = LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + LowQualFinSF + GrLivArea + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond) + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + PoolArea + MiscVal + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + Alley + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + PoolQC + Fence + MiscFeature + SaleType + SaleCondition
+
+
+```{r}
+model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + LowQualFinSF + GrLivArea + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond) + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + PoolArea + MiscVal + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + Alley + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + PoolQC + Fence + MiscFeature + SaleType + SaleCondition, data=train)
+```
+
+model1 <- lm(SalePrice~.-c("MasVnrArea","MasVnrType","GarageCars","GarageYrBlt","YearRemodAdd","GarageArea","GarageType","GarageFinish","GarageQual","GarageCond","dummy_garage","dummy_masvnr","dummy_RemodYear") + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond), data=train)
+
+```{r}
+model1 <- lm(formula = SalePrice~., data=train[,-c()])
+lm(formula = SalePrice ~ ., data = train[, -c(6, 15, 16, 33)])
+```
+
 ##Variable selection:
 Tema 3
 
