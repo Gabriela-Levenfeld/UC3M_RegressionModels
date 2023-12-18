@@ -71,7 +71,6 @@ skim(test)
 ```
 
 
-
 ```{r}
 # Ordenar las columnas por tipo de variable (Las 25 primeras son continuas)
 train <- train[,c(1,81,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,48,49,50,51,52,53,55,57,62,77,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,54,56,58,59,61,64,65,66,73,74,75,79,80)]
@@ -219,7 +218,7 @@ train$dummy_RemodYear <- ifelse(is.na(train$YearRemodAdd),0,1)
 test$dummy_garage <- ifelse(is.na(test$GarageYrBlt),0,1)
 test$dummy_masvnr <- ifelse(is.na(test$MasVnrArea),0,1)
 test$dummy_RemodYear <- ifelse(is.na(test$YearRemodAdd),0,1)
-
+#Keep dummies as numeric
 class(test$dummy_RemodYear)
 ```
 
@@ -286,7 +285,7 @@ obtener_diferencia_categorias <- function(dataframe1, dataframe2) {
 # Ejemplo de uso
 # Supongamos que tienes dos dataframes: 'dataframe_1' y 'dataframe_2'
 # Llama a la función y pasa los dataframes como argumentos
-categorias_diferentes <- obtener_diferencia_categorias(train[,33:74], test[,32:73])
+categorias_diferentes <- obtener_diferencia_categorias(train[,33:72], test[,32:71])
 
 # Muestra los nombres de las categorías únicas presentes en dataframe_1 pero no en dataframe_2
 print("Nombres de categorías presentes en dataframe_1 pero no en dataframe_2:")
@@ -491,7 +490,7 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
 -   The rest of the variables have positive skewness, so the proper transformation will be a log transformation. After trying to transform these variables, there is no improvement in some of them, so they will remain as the original ones. It is worth to mention that we have done log(X+1) so as to avoid errors with zero values. We have applied it to: BsmtFinSF1, BsmtFinSF2, BsmtUnfSF, GarageArea, WoodDeckSF and OpenPorchSF.
 
 **Others**
--   YrSold;-> This variable has seasonality, there are some years where more sales occur. This makes sense as could depend on the economic cycles. *Buscar tanformación*.
+-   YrSold;-> This variable has seasonality, there are some years where more sales occur. This makes sense as could depend on the economic cycles. *Buscar tranformación*.
 
 ```{r warning=FALSE, message=FALSE,echo=FALSE}
 library(psych)
@@ -582,13 +581,28 @@ train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4
 model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + LandSlope+ Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating+ HeatingQC + CentralAir + Electrical + KitchenQual+ Functional+ FireplaceQu,data=train)
 
 
-summary(model1)
+#summary(model1)
 ```
 
 ```{r}
 modelo1aic <- stepAIC(model1,direction="both", trace=FALSE)
 summary(modelo1aic)
+model2 <- lm(formula(modelo1aic),data=train)
 ```
+
+*Comparar el reduce model with full one using ANOVA - FALTA INTERPRETAR*
+
+```{r}
+anova(model1,model2,test="Chi")
+```
+
+*Interacciones entre categoricas y numericas*
+
+```{r}
+# Loop para que haga las interacciones entre todas
+for i in 
+```
+
 
 ```{r}
 plot(modelo1aic$residuals)
@@ -596,14 +610,16 @@ shapiro.test(modelo1aic$residuals)
 qqnorm(residuals(modelo1aic))
 qqline(residuals(modelo1aic))
 ```
-```{r}
 
+```{r}
 resact <- data.frame(residual = modelo1aic$residuals, fitted = modelo1aic$fitted.values)
 
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = 0)) + 
     theme(panel.grid = element_blank(), panel.background = element_blank())
 ```
+
 # Hetereosdacity
+
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_hline(aes(yintercept = 0))
 
@@ -611,39 +627,20 @@ resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_h
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 bptest(modelo1aic)
-
 ```
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 vif(modelo1aic)
 ```
 
-
-+ PavedDrive
-dummy_garage:GarageQual+
+## Correlation matrix (GGPairs)
 
 ```{r}
-model1 <- lm(SalePrice~.-MasVnrArea-MasVnrType-GarageCars-GarageYrBlt-YearRemodAdd-GarageArea-GarageType-GarageFinish-GarageQual-GarageCond-dummy_garage-dummy_masvnr-dummy_RemodYear + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond), data=train)
+ggcorr(num_train_dataset, label = TRUE, label_size = 2, hjust = 1, digits =3,layout.exp = 2)
 ```
 
-```{r}
-nombres <- names(train)
-nombres
-```
-
-variables = LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + LowQualFinSF + GrLivArea + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond) + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + PoolArea + MiscVal + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + Alley + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + PoolQC + Fence + MiscFeature + SaleType + SaleCondition
 
 
-```{r}
-model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + LowQualFinSF + GrLivArea + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond) + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + PoolArea + MiscVal + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + Alley + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + PoolQC + Fence + MiscFeature + SaleType + SaleCondition, data=train)
-```
-
-model1 <- lm(SalePrice~.-c("MasVnrArea","MasVnrType","GarageCars","GarageYrBlt","YearRemodAdd","GarageArea","GarageType","GarageFinish","GarageQual","GarageCond","dummy_garage","dummy_masvnr","dummy_RemodYear") + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond), data=train)
-
-```{r}
-model1 <- lm(formula = SalePrice~., data=train[,-c()])
-lm(formula = SalePrice ~ ., data = train[, -c(6, 15, 16, 33)])
-```
 
 ##Variable selection:
 Tema 3
