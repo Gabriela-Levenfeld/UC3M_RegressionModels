@@ -97,6 +97,13 @@ Number_NA_train<-(colSums(is.na(train))/nrow(train))*100
 sort(Number_NA_train,decreasing = TRUE)
 ```
 
+Acoording to the high percentage of NA, we are going to eliminate the variables "PoolQC" and the associated numerical one, "PoolArea". The same occur with "MiscFeature" and "MiscVal", "Fence" and "Alley".
+
+```{r}
+train <- train[,-c(22,23,38,76,77,78)]
+test <- test[,-c(21,22,37,75,76,77)]
+```
+
 ```{r}
 # Counting NA: test and express in %
 Number_NA_test<-(colSums(is.na(test))/nrow(test))*100
@@ -107,9 +114,6 @@ What should we then do this those variables that have more missing values than e
 However, NA values have a meaning in most of the cases where its percentage is high. For example, in PoolQC it means that the house does not have pool, in Alley means that the house no alley access... Consequently, we should change NA for None so that they will later appear when displaying these variables values.
 
 ```{r}
-train$PoolQC <- ifelse(is.na(train$PoolQC),"None",train$PoolQC)
-train$Fence <- ifelse(is.na(train$Fence),"None",train$Fence)
-train$Alley <- ifelse(is.na(train$Alley),"None",train$Alley)
 train$BsmtFinType1 <- ifelse(is.na(train$BsmtFinType1),"None",train$BsmtFinType1)
 train$BsmtCond <- ifelse(is.na(train$BsmtCond),"None",train$BsmtCond)
 train$BsmtQual <- ifelse(is.na(train$BsmtQual),"None",train$BsmtQual)
@@ -120,12 +124,8 @@ train$GarageCond <- ifelse(is.na(train$GarageCond),"None",train$GarageCond)
 train$GarageQual <- ifelse(is.na(train$GarageQual),"None",train$GarageQual)
 train$GarageFinish <- ifelse(is.na(train$GarageFinish),"None",train$GarageFinish)
 train$GarageType <- ifelse(is.na(train$GarageType),"None",train$GarageType)
-train$MiscFeature <- ifelse(is.na(train$MiscFeature),"None",train$MiscFeature)
 train$MasVnrType <- ifelse(is.na(train$MasVnrType),"None",train$MasVnrType)
 
-test$PoolQC <- ifelse(is.na(test$PoolQC),"None",test$PoolQC)
-test$Fence <- ifelse(is.na(test$Fence),"None",test$Fence)
-test$Alley <- ifelse(is.na(test$Alley),"None",test$Alley)
 test$BsmtFinType1 <- ifelse(is.na(test$BsmtFinType1),"None",test$BsmtFinType1)
 test$BsmtCond <- ifelse(is.na(test$BsmtCond),"None",test$BsmtCond)
 test$BsmtQual <- ifelse(is.na(test$BsmtQual),"None",test$BsmtQual)
@@ -136,7 +136,6 @@ test$GarageCond <- ifelse(is.na(test$GarageCond),"None",test$GarageCond)
 test$GarageQual <- ifelse(is.na(test$GarageQual),"None",test$GarageQual)
 test$GarageFinish <- ifelse(is.na(test$GarageFinish),"None",test$GarageFinish)
 test$GarageType <- ifelse(is.na(test$GarageType),"None",test$GarageType)
-test$MiscFeature <- ifelse(is.na(test$MiscFeature),"None",test$MiscFeature)
 test$MasVnrType <- ifelse(is.na(test$MasVnrType),"None",test$MasVnrType)
 ```
 
@@ -213,13 +212,21 @@ sum(test$YearRemodAdd==test$YearBuilt)
 ```
 
 ```{r}
-train$dummy_garage <- ifelse(is.na(train$GarageYrBlt),1,0)
-train$dummy_masvnr <- ifelse(is.na(train$MasVnrArea),1,0)
-train$dummy_RemodYear <- ifelse(is.na(train$YearRemodAdd),1,0)
+train$dummy_garage <- ifelse(is.na(train$GarageYrBlt),0,1)
+train$dummy_masvnr <- ifelse(is.na(train$MasVnrArea),0,1)
+train$dummy_RemodYear <- ifelse(is.na(train$YearRemodAdd),0,1)
 
-test$dummy_garage <- ifelse(is.na(test$GarageYrBlt),1,0)
-test$dummy_masvnr <- ifelse(is.na(test$MasVnrArea),1,0)
-test$dummy_RemodYear <- ifelse(is.na(test$YearRemodAdd),1,0)
+test$dummy_garage <- ifelse(is.na(test$GarageYrBlt),0,1)
+test$dummy_masvnr <- ifelse(is.na(test$MasVnrArea),0,1)
+test$dummy_RemodYear <- ifelse(is.na(test$YearRemodAdd),0,1)
+
+train$dummy_garage <- factor(train$dummy_garage)
+train$dummy_masvnr <- factor(train$dummy_masvnr)
+train$dummy_RemodYear <- factor(train$dummy_RemodYear)
+test$dummy_garage <- factor(test$dummy_garage)
+test$dummy_masvnr <- factor(test$dummy_masvnr)
+test$dummy_RemodYear <- factor(test$dummy_RemodYear)
+
 
 class(test$dummy_RemodYear)
 ```
@@ -300,12 +307,8 @@ We have the special case of the variable utilities that only one category remain
 
 ```{r}
 # We delete variable Utilities because is constant (we deleted the NoSeWa category because it is train but not in test)
-train=train[,-41]
-test=test[,-40]
-
-# Condition2
-train$Condition2 <- replace(train$Condition2, train$Condition2 == c("RRAe","RRAn","RRNn"), "Norm")
-train$Condition2 <- droplevels(train$Condition2, exclude = c("RRAe","RRAn","RRNn"))
+train=train[,-38]
+test=test[,-37]
 
 # HouseStyle
 train$HouseStyle <- replace(train$HouseStyle, train$HouseStyle == "2.5Fin", "1Story")
@@ -334,14 +337,6 @@ train$Electrical <- droplevels(train$Electrical, exclude =  "Mix")
 # GarageQual
 train$GarageQual <- replace(train$GarageQual, train$GarageQual == "Ex", "TA")
 train$GarageQual <- droplevels(train$GarageQual, exclude =  "Ex")
-
-# PoolQC
-train$PoolQC <- replace(train$PoolQC, train$PoolQC == "Fa", "None")
-train$PoolQC <- droplevels(train$PoolQC, exclude =  "Fa")
-
-# MiscFeature
-train$MiscFeature <- replace(train$MiscFeature, train$MiscFeature == "TenC", "None")
-train$MiscFeature <- droplevels(train$MiscFeature, exclude =  "TenC")
 
 # MSSubClass
 test$MSSubClass <- replace(test$MSSubClass, test$MSSubClass == '150', '20')
@@ -430,6 +425,13 @@ for (i in 26:34) {
        col = colours[i - 25],
        breaks = 5)
 }
+```
+
+As was done above, some variables are going to be delated because most of the observations correspond to a single category, so they are aproximately constant and other observations can be outliers.
+
+```{r}
+train <- train[,-c(42,48)]
+test <- test[,-c(41,47)]
 ```
 
 Same for test:
@@ -611,6 +613,10 @@ How to deal with multicolinearity?: (*Slides T2 o T4- QQPlot*)
 
 
 #Model:
+
+```{r}
+model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + LowQualFinSF + GrLivArea + dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageQual+dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + PoolArea + MiscVal + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + Alley + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + PoolQC + Fence + MiscFeature + SaleType + SaleCondition, data=train, na.action=na.exclude)
+```
 
 ```{r}
 model1 <- lm(SalePrice~.-MasVnrArea-MasVnrType-GarageCars-GarageYrBlt-YearRemodAdd-GarageArea-GarageType-GarageFinish-GarageQual-GarageCond-dummy_garage-dummy_masvnr-dummy_RemodYear + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond), data=train)
