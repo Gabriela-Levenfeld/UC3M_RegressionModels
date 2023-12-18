@@ -105,11 +105,12 @@ sort(Number_NA_test,decreasing = TRUE)
 
 Acoording to the high percentage of NA, we are going to eliminate the variables "PoolQC" and the associated numerical one, "PoolArea". The same occur with "MiscFeature" and "MiscVal", "Fence" and "Alley". 
 Other variables are going to be deleted due to the great deal of values in a single category, which would imply that the rest of the categories are seen as outliers. This is the case of: Utilities, Street and PavedDrive.
+Furthermore, we delete GarageQual as we consider to have the similar meaning to GarageCond.
 Finally, some numerical variables have for most of their observations (>90%) the same value, so for the same reason are going to be deleted. This is LowQualFinSF. 
 
 ```{r}
-train <- train[,-c(13,22,23,37,38,75,76,77,78,41)]
-test <- test[,-c(12,21,22,36,37,74,75,76,77,40)]
+train <- train[,-c(13,22,23,37,38,73,75,76,77,78,41)]
+test <- test[,-c(12,21,22,36,37,72,74,75,76,77,40)]
 ```
 
 What should we then do this those variables that have more missing values than existing ones? Maintaining them can we a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. 
@@ -123,7 +124,6 @@ train$BsmtFinType2 <- ifelse(is.na(train$BsmtFinType2),"None",train$BsmtFinType2
 train$BsmtExposure <- ifelse(is.na(train$BsmtExposure),"None",train$BsmtExposure)
 train$FireplaceQu <- ifelse(is.na(train$FireplaceQu),"None",train$FireplaceQu)
 train$GarageCond <- ifelse(is.na(train$GarageCond),"None",train$GarageCond)
-train$GarageQual <- ifelse(is.na(train$GarageQual),"None",train$GarageQual)
 train$GarageFinish <- ifelse(is.na(train$GarageFinish),"None",train$GarageFinish)
 train$GarageType <- ifelse(is.na(train$GarageType),"None",train$GarageType)
 train$MasVnrType <- ifelse(is.na(train$MasVnrType),"None",train$MasVnrType)
@@ -135,7 +135,6 @@ test$BsmtFinType2 <- ifelse(is.na(test$BsmtFinType2),"None",test$BsmtFinType2)
 test$BsmtExposure <- ifelse(is.na(test$BsmtExposure),"None",test$BsmtExposure)
 test$FireplaceQu <- ifelse(is.na(test$FireplaceQu),"None",test$FireplaceQu)
 test$GarageCond <- ifelse(is.na(test$GarageCond),"None",test$GarageCond)
-test$GarageQual <- ifelse(is.na(test$GarageQual),"None",test$GarageQual)
 test$GarageFinish <- ifelse(is.na(test$GarageFinish),"None",test$GarageFinish)
 test$GarageType <- ifelse(is.na(test$GarageType),"None",test$GarageType)
 test$MasVnrType <- ifelse(is.na(test$MasVnrType),"None",test$MasVnrType)
@@ -330,10 +329,6 @@ train$Heating <- droplevels(train$Heating, exclude =  "OthW")
 # Electrical
 train$Electrical <- replace(train$Electrical, train$Electrical == "Mix", "SBrKr")
 train$Electrical <- droplevels(train$Electrical, exclude =  "Mix")
-
-# GarageQual
-train$GarageQual <- replace(train$GarageQual, train$GarageQual == "Ex", "TA")
-train$GarageQual <- droplevels(train$GarageQual, exclude =  "Ex")
 
 # MSSubClass
 test$MSSubClass <- replace(test$MSSubClass, test$MSSubClass == '150', '20')
@@ -580,17 +575,49 @@ How to deal with multicolinearity?: (*Slides T2 o T4- QQPlot*)
 #Model:
 
 ```{r}
-model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea + dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageQual+dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + SaleType + SaleCondition, data=train)
-```
-
-```{r}
-train$GarageQual <- factor(train$GarageQual, levels=levels(train$GarageQual)[c(3,4,1,5,2)])
 train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4,5,2,6,3,1)])
 ```
 
 ```{r}
 model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + LandSlope+ Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating+ HeatingQC + CentralAir + Electrical + KitchenQual+ Functional+ FireplaceQu,data=train)
+
+
+summary(model1)
 ```
+
+```{r}
+modelo1aic <- stepAIC(model1,direction="both", trace=FALSE)
+summary(modelo1aic)
+```
+
+```{r}
+plot(modelo1aic$residuals)
+shapiro.test(modelo1aic$residuals)
+qqnorm(residuals(modelo1aic))
+qqline(residuals(modelo1aic))
+```
+```{r}
+
+resact <- data.frame(residual = modelo1aic$residuals, fitted = modelo1aic$fitted.values)
+
+resact %>% ggplot(aes(fitted, residual)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = 0)) + 
+    theme(panel.grid = element_blank(), panel.background = element_blank())
+```
+# Hetereosdacity
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
+resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_hline(aes(yintercept = 0))
+
+```
+
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
+bptest(modelo1aic)
+
+```
+
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
+vif(modelo1aic)
+```
+
 
 + PavedDrive
 dummy_garage:GarageQual+
