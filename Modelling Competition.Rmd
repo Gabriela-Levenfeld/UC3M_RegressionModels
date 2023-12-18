@@ -97,17 +97,19 @@ Number_NA_train<-(colSums(is.na(train))/nrow(train))*100
 sort(Number_NA_train,decreasing = TRUE)
 ```
 
-Acoording to the high percentage of NA, we are going to eliminate the variables "PoolQC" and the associated numerical one, "PoolArea". The same occur with "MiscFeature" and "MiscVal", "Fence" and "Alley".
-
-```{r}
-train <- train[,-c(22,23,38,76,77,78)]
-test <- test[,-c(21,22,37,75,76,77)]
-```
-
 ```{r}
 # Counting NA: test and express in %
 Number_NA_test<-(colSums(is.na(test))/nrow(test))*100
 sort(Number_NA_test,decreasing = TRUE)
+```
+
+Acoording to the high percentage of NA, we are going to eliminate the variables "PoolQC" and the associated numerical one, "PoolArea". The same occur with "MiscFeature" and "MiscVal", "Fence" and "Alley". 
+Other variables are going to be deleted due to the great deal of values in a single category, which would imply that the rest of the categories are seen as outliers. This is the case of: Utilities. 
+Finally, some numerical variables have for most of their observations (>90%) the same value, so for the same reason are going to be deleted. This is LowQualFinSF. 
+
+```{r}
+train <- train[,-c(13,22,23,38,76,77,78,41)]
+test <- test[,-c(12,21,22,37,75,76,77,40)]
 ```
 
 What should we then do this those variables that have more missing values than existing ones? Maintaining them can we a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. 
@@ -170,7 +172,6 @@ test$BsmtFinSF2<- ifelse(is.na(test$BsmtFinSF2),median(na.omit(test$BsmtFinSF2))
 test$BsmtFinSF1<- ifelse(is.na(test$BsmtFinSF1),median(na.omit(test$BsmtFinSF1)),test$BsmtFinSF1) #numeric
 test$BsmtFullBath<- ifelse(is.na(test$BsmtFullBath),median(na.omit(test$BsmtFullBath)),test$BsmtFullBath) #discrete
 test$BsmtHalfBath<- ifelse(is.na(test$BsmtHalfBath),median(na.omit(test$BsmtHalfBath)),test$BsmtHalfBath) #discrete
-test$Utilities<- ifelse(is.na(test$Utilities),"AllPub",test$Utilities)
 test$Functional<- ifelse(is.na(test$Functional),"Typ",test$Functional)
 test$MSZoning<- ifelse(is.na(test$MSZoning),"RL",test$MSZoning)
 ```
@@ -294,7 +295,7 @@ obtener_diferencia_categorias <- function(dataframe1, dataframe2) {
 # Ejemplo de uso
 # Supongamos que tienes dos dataframes: 'dataframe_1' y 'dataframe_2'
 # Llama a la función y pasa los dataframes como argumentos
-categorias_diferentes <- obtener_diferencia_categorias(train[,35:80], test[,35:79])
+categorias_diferentes <- obtener_diferencia_categorias(train[,33:75], test[,32:74])
 
 # Muestra los nombres de las categorías únicas presentes en dataframe_1 pero no en dataframe_2
 print("Nombres de categorías presentes en dataframe_1 pero no en dataframe_2:")
@@ -303,13 +304,7 @@ print(categorias_diferentes)
 
 Once with have the categories that differ, we will replace in the dataset that contains the category that does not occur in the other dataset for the mode of the variable, and delate the category.
 
-We have the special case of the variable utilities that only one category remains, so makes no sense to keep the variable.
-
 ```{r}
-# We delete variable Utilities because is constant (we deleted the NoSeWa category because it is train but not in test)
-train=train[,-38]
-test=test[,-37]
-
 # HouseStyle
 train$HouseStyle <- replace(train$HouseStyle, train$HouseStyle == "2.5Fin", "1Story")
 train$HouseStyle <- droplevels(train$HouseStyle, exclude= "1Story")
@@ -360,10 +355,6 @@ Comparing the maximum values and the means of some of the variables we suspect t
 summary(num_train_dataset)
 summary(num_test_dataset)
 
-outlier1 <- num_train_dataset %>% filter(PoolArea >= 50)
-outlier2 <- num_test_dataset %>% filter(PoolArea >= 50)
-outlier3 <- num_train_dataset %>% filter(LotArea >= 150000)
-outlier4 <- num_test_dataset %>% filter(LotArea >= 150000)
 
 #cooks.distance() #Creo que no nos sirve, probar con esto: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/influence.measures
 
@@ -417,7 +408,7 @@ colours <- c("red", "blue", "green",
              "orange", "purple", "pink",
              "brown", "gray", "cyan")
 
-for (i in 26:34) {
+for (i in 26:31) {
   col_name <- colnames(num_train_dataset)[i]
   boxplot(num_train_dataset[, i], 
        main = col_name,
@@ -425,13 +416,6 @@ for (i in 26:34) {
        col = colours[i - 25],
        breaks = 5)
 }
-```
-
-As was done above, some variables are going to be delated because most of the observations correspond to a single category, so they are aproximately constant and other observations can be outliers.
-
-```{r}
-train <- train[,-c(42,48)]
-test <- test[,-c(41,47)]
 ```
 
 Same for test:
@@ -474,7 +458,7 @@ colours <- c("red", "blue", "green",
              "orange", "purple", "pink",
              "brown", "gray", "cyan")
 
-for (i in 25:33) {
+for (i in 25:30) {
   col_name <- colnames(num_test_dataset)[i]
   hist(num_test_dataset[, i], 
        main = col_name,
@@ -485,6 +469,7 @@ for (i in 25:33) {
 ```
 
 ## GGPairs
+
 Next step is to get the scatter plot for the quantitative features (24 variables) in order to decide which transformation we will apply them (just if it is necessary).
 
 ```{r, warning=FALSE, message=FALSE}
@@ -514,7 +499,7 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
 ```{r warning=FALSE, message=FALSE,echo=FALSE}
 library(psych)
 library(pander)
-skewness <- round(skew(train[,1:24]), 1)
+skewness <- round(skew(train[,1:21]), 1)
 result_df <- data.frame(variable = colnames(train[,1:24]), skewness = skewness)
 pander(result_df)
 ```
@@ -523,7 +508,7 @@ pander(result_df)
 ```{r}
 # Check if the quantitative feature has a cero or not. This will influence our choice for the traanformation
 counter <- 0
-for (i in head(names(train), 24)) {
+for (i in head(names(train), 21)) {
   if (any(!is.na(train[[i]]) & train[[i]] == 0)) {
     counter <- counter + 1
     print(paste("Column '", i, "' has at least one zero value.", sep = ""))
@@ -538,7 +523,7 @@ train[,c(3,11)] <- 1/train[,c(3,11)]
 # log
 train[,c(2)] <- log(train[,c(2)])
 #log+1 because there are 0 values on that feature
-train[,c(7,8,9,16,17,18)] <- log(train[,c(7,8,9,16,17,18)]+1)
+train[,c(7,8,9,15,16,17)] <- log(train[,c(7,8,9,15,16,17)]+1)
 ```
 
 In order to check if we achive the normality distributions on the variables thanks to the transformations apply, we plot again the scatters plots.
@@ -561,9 +546,10 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
 To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
 
 ```{r, fig.height=7,fig.width=7}
-correlation_matrix <- cor(num_train_dataset, na.rm = TRUE)
+correlation_matrix <- cor(num_train_dataset,use='pairwise.complete.obs')
 rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
 corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7)
+
 
 #Correlacion nula con 8,13,20,22,23,24,26 y 34
 #Baja con 3,9,21,25,28,29,19 y 30(ULTIMOS CASOS ES -)
@@ -615,7 +601,7 @@ How to deal with multicolinearity?: (*Slides T2 o T4- QQPlot*)
 #Model:
 
 ```{r}
-model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + LowQualFinSF + GrLivArea + dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageQual+dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + PoolArea + MiscVal + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + Alley + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + PoolQC + Fence + MiscFeature + SaleType + SaleCondition, data=train, na.action=na.exclude)
+model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea + dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageQual+dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + SaleType + SaleCondition, data=train, na.action=na.exclude)
 ```
 
 ```{r}
