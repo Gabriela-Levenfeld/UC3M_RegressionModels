@@ -104,12 +104,12 @@ sort(Number_NA_test,decreasing = TRUE)
 ```
 
 Acoording to the high percentage of NA, we are going to eliminate the variables "PoolQC" and the associated numerical one, "PoolArea". The same occur with "MiscFeature" and "MiscVal", "Fence" and "Alley". 
-Other variables are going to be deleted due to the great deal of values in a single category, which would imply that the rest of the categories are seen as outliers. This is the case of: Utilities. 
+Other variables are going to be deleted due to the great deal of values in a single category, which would imply that the rest of the categories are seen as outliers. This is the case of: Utilities, Street.
 Finally, some numerical variables have for most of their observations (>90%) the same value, so for the same reason are going to be deleted. This is LowQualFinSF. 
 
 ```{r}
-train <- train[,-c(13,22,23,38,76,77,78,41)]
-test <- test[,-c(12,21,22,37,75,76,77,40)]
+train <- train[,-c(13,22,23,37,38,76,77,78,41)]
+test <- test[,-c(12,21,22,36,37,75,76,77,40)]
 ```
 
 What should we then do this those variables that have more missing values than existing ones? Maintaining them can we a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. 
@@ -221,14 +221,6 @@ test$dummy_garage <- ifelse(is.na(test$GarageYrBlt),0,1)
 test$dummy_masvnr <- ifelse(is.na(test$MasVnrArea),0,1)
 test$dummy_RemodYear <- ifelse(is.na(test$YearRemodAdd),0,1)
 
-train$dummy_garage <- factor(train$dummy_garage)
-train$dummy_masvnr <- factor(train$dummy_masvnr)
-train$dummy_RemodYear <- factor(train$dummy_RemodYear)
-test$dummy_garage <- factor(test$dummy_garage)
-test$dummy_masvnr <- factor(test$dummy_masvnr)
-test$dummy_RemodYear <- factor(test$dummy_RemodYear)
-
-
 class(test$dummy_RemodYear)
 ```
 
@@ -307,23 +299,33 @@ Once with have the categories that differ, we will replace in the dataset that c
 ```{r}
 # HouseStyle
 train$HouseStyle <- replace(train$HouseStyle, train$HouseStyle == "2.5Fin", "1Story")
-train$HouseStyle <- droplevels(train$HouseStyle, exclude= "1Story")
+train$HouseStyle <- droplevels(train$HouseStyle, exclude= "2.5Fin")
 
 # Roofmatl
-train$RoofMatl <- replace(train$RoofMatl, train$RoofMatl == c("ClyTile","Membran","Metal","Roll"), "CompShg")
-train$RoofMatl <- droplevels(train$RoofMatl, exclude =  c("ClyTile","Membran","Metal","Roll"))
+train$RoofMatl <- replace(train$RoofMatl, train$RoofMatl == "ClyTile", "CompShg")
+train$RoofMatl <- droplevels(train$RoofMatl, exclude =  "ClyTile")
+train$RoofMatl <- replace(train$RoofMatl, train$RoofMatl == "Membran", "CompShg")
+train$RoofMatl <- droplevels(train$RoofMatl, exclude =  "Membran")
+train$RoofMatl <- replace(train$RoofMatl, train$RoofMatl == "Metal", "CompShg")
+train$RoofMatl <- droplevels(train$RoofMatl, exclude = "Metal")
+train$RoofMatl <- replace(train$RoofMatl, train$RoofMatl == "Roll", "CompShg")
+train$RoofMatl <- droplevels(train$RoofMatl, exclude =  "Roll")
 
 # Exterior1st
-train$Exterior1st <- replace(train$Exterior1st, train$Exterior1st == c("ImStucc","Stone"), "VinylSd")
-train$Exterior1st <- droplevels(train$Exterior1st, exclude =  c("ImStucc","Stone"))
+train$Exterior1st <- replace(train$Exterior1st, train$Exterior1st == "ImStucc", "VinylSd")
+train$Exterior1st <- droplevels(train$Exterior1st, exclude =  "ImStucc")
+train$Exterior1st <- replace(train$Exterior1st, train$Exterior1st == "Stone", "VinylSd")
+train$Exterior1st <- droplevels(train$Exterior1st, exclude = "Stone")
 
 # Exterior2st
 train$Exterior2nd <- replace(train$Exterior2nd, train$Exterior2nd == "Other", "VinylSd")
 train$Exterior2nd <- droplevels(train$Exterior2nd, exclude =  "Other")
 
 # Heating
-train$Heating <- replace(train$Heating, train$Heating == c("Floor","OthW"), "GasA")
-train$Heating <- droplevels(train$Heating, exclude =  c("Floor","OthW"))
+train$Heating <- replace(train$Heating, train$Heating == "Floor", "GasA")
+train$Heating <- droplevels(train$Heating, exclude =  "Floor")
+train$Heating <- replace(train$Heating, train$Heating == "OthW", "GasA")
+train$Heating <- droplevels(train$Heating, exclude =  "OthW")
 
 # Electrical
 train$Electrical <- replace(train$Electrical, train$Electrical == "Mix", "SBrKr")
@@ -500,7 +502,7 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
 library(psych)
 library(pander)
 skewness <- round(skew(train[,1:21]), 1)
-result_df <- data.frame(variable = colnames(train[,1:24]), skewness = skewness)
+result_df <- data.frame(variable = colnames(train[,1:21]), skewness = skewness)
 pander(result_df)
 ```
 
@@ -548,30 +550,7 @@ To see which the quantitative features that strongly affect home price, checking
 ```{r, fig.height=7,fig.width=7}
 correlation_matrix <- cor(num_train_dataset,use='pairwise.complete.obs')
 rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
-corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7)
-
-
-#Correlacion nula con 8,13,20,22,23,24,26 y 34
-#Baja con 3,9,21,25,28,29,19 y 30(ULTIMOS CASOS ES -)
-#Media con 2,6,7,12,17,18,
-#Alta con 4,5,10,11,14,16,27,33 (32,15)
-
-#high_correlation_values <- correlation_matrix[correlation_matrix > 0.7]
-#print(high_correlation_values)
-
-high_correlation_indices <- which(correlation_matrix > 0.7, arr.ind = TRUE)
-
-# Muestra los pares de variables que cumplen con la condición
-for (i in 1:nrow(high_correlation_indices)) {
-  row_index <- high_correlation_indices[i, 1]
-  col_index <- high_correlation_indices[i, 2]
-  var1 <- colnames(correlation_matrix)[row_index]
-  var2 <- colnames(correlation_matrix)[col_index]
-  cat("Correlation between", var1, "and", var2, ":", correlation_matrix[row_index, col_index], "\n")
-}
-
-print(high_correlation_indices)
-#Este código se me ha quedado a medias
+corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7, type="upper")
 ```
 
 The only variable that are negatively correlated with house price are EnclosedPorch and KitchenAbvGr, but as the correlation of both is quite small we will not worry to much. 
@@ -601,8 +580,19 @@ How to deal with multicolinearity?: (*Slides T2 o T4- QQPlot*)
 #Model:
 
 ```{r}
-model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea + dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageQual+dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + SaleType + SaleCondition, data=train, na.action=na.exclude)
+model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea + dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageQual+dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + TotRmsAbvGrd + Fireplaces + MoSold + MSSubClass + MSZoning + Street + LotShape + LandContour + LotConfig + LandSlope + Neighborhood + Condition1 + Condition2 + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + RoofMatl + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtCond + BsmtExposure + BsmtFinType1 + BsmtFinType2 + Heating + HeatingQC + CentralAir + Electrical + KitchenQual + Functional + FireplaceQu + PavedDrive + SaleType + SaleCondition, data=train)
 ```
+
+```{r}
+train$GarageQual <- factor(train$GarageQual, levels=levels(train$GarageQual)[c(3,4,1,5,2)])
+train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4,5,2,6,3,1)])
+```
+
+```{r}
+model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + Street ,data=train)
+```
+
+dummy_garage:GarageQual+
 
 ```{r}
 model1 <- lm(SalePrice~.-MasVnrArea-MasVnrType-GarageCars-GarageYrBlt-YearRemodAdd-GarageArea-GarageType-GarageFinish-GarageQual-GarageCond-dummy_garage-dummy_masvnr-dummy_RemodYear + dummy_RemodYear:YearRemodAdd + dummy_masvnr:(MasVnrArea+MasVnrType) + dummy_garage:(GarageCars+GarageYrBlt+GarageArea+GarageType+GarageFinish+GarageQual+GarageCond), data=train)
