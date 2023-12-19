@@ -168,8 +168,8 @@ train$Electrical <- ifelse(is.na(train$Electrical),"SBrkr",train$Electrical)
 
 test$SaleType <- ifelse(is.na(test$SaleType),"WD",test$SaleType)
 test$KitchenQual <- ifelse(is.na(test$KitchenQual),"TA",test$KitchenQual)
-test$Exterior2nd <- ifelse(is.na(test$Exterior2nd),"VinylSd",test$Exterior2nd)
 test$Exterior1st <- ifelse(is.na(test$Exterior1st),"VinylSd",test$Exterior1st)
+test$Exterior2nd <- ifelse(is.na(test$Exterior2nd),"VinylSd",test$Exterior2nd)
 test$TotalBsmtSF<- ifelse(is.na(test$TotalBsmtSF),median(na.omit(test$TotalBsmtSF)),test$TotalBsmtSF) #numeric
 test$BsmtUnfSF<- ifelse(is.na(test$BsmtUnfSF),median(na.omit(test$BsmtUnfSF)),test$BsmtUnfSF) #numeric
 test$BsmtFinSF2<- ifelse(is.na(test$BsmtFinSF2),median(na.omit(test$BsmtFinSF2)),test$BsmtFinSF2) #numeric
@@ -512,7 +512,7 @@ train[,c(2)] <- log(train[,c(2)])
 train[,c(7,8,9,15,16,17)] <- log(train[,c(7,8,9,15,16,17)]+1)
 ```
 
-In order to check if we achive the normality distributions on the variables thanks to the transformations apply, we plot again the scatters plots.
+In order to check if we archive the normality distributions on the variables thanks to the transformations apply, we plot again the scatters plots.
 
 ```{r, warning=FALSE, message=FALSE}
 ggpairs(train[,1:12],aes(fill="pink"),
@@ -568,15 +568,30 @@ train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4
 ```
 
 ```{r}
-model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + Exterior1st + Exterior2nd + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ Functional+ FireplaceQu,data=train)
-
-#summary(model1)
+model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + Exterior2nd + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ Functional+ FireplaceQu,data=train)
+```
+BsmtFinType1??
+*We delete the variables that are correlated between them:*
+```{r}
+model2 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ FireplaceQu,data=train)
+```
++ Functional
++ dummy_RemodYear:YearRemodAdd
+```{r}
+#model2 <- lm(SalePrice~Functional+dummy_RemodYear:YearRemodAdd,data=train)
 ```
 
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
+vif(model2)
+```
+
+*Next, we have noticed during the assignment that some variables have a correlation BsmtFinType1 and YearRemode (deleting BsmtFinType1- Pero el modelo con ambas funciona), Exterior1st and Exterior2nd (deleting Exterior2nd), MSSubClass and BldgType (deleting MSSUbClass)*
+
+
 ```{r}
-modelo1aic <- stepAIC(model1,direction="both", trace=FALSE)
-summary(modelo1aic)
-model2 <- lm(formula(modelo1aic),data=train)
+modelo2aic <- stepAIC(model2,direction="both", trace=FALSE)
+summary(modelo2aic)
+#model2 <- lm(formula(modelo1aic),data=train)
 ```
 
 *Comparar el reduce model with full one using ANOVA - FALTA INTERPRETAR*
