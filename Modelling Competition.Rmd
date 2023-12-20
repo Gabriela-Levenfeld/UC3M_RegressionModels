@@ -566,10 +566,10 @@ How to deal with multicolinearity?: (*Slides T2 o T4- QQPlot*)
 -Use antoher estimator other than Least Square
 -Get rid of these redundant variables using variable selection techniques.
 
-##ANOVA:
+## ANOVA:
 
 
-#Model:
+# Model:
 
 ```{r}
 train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4,5,2,6,3,1)])
@@ -578,6 +578,7 @@ train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4
 ```{r}
 model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + Exterior2nd + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ Functional+ FireplaceQu+RoofMatl+Condition1+CentralAir+Heating+BsmtCond+LandSlope+CentralAir+Condition1+RoofMatl,data=train)
 ```
+
 *We delete the variables that are correlated between them:*
 *Next, we have noticed during the assignment that some variables have a correlation BsmtFinType1 and YearRemode (deleting BsmtFinType1- Pero el modelo con ambas funciona), Exterior1st and Exterior2nd (deleting Exterior2nd), MSSubClass and BldgType (deleting MSSUbClass),BsmtCond and BsmtQual(deleting BsmtCond), Functional and dummy_RemodYear:YearRemodAdd also cause errors due to multicollinearity if added to the model.*
 
@@ -591,11 +592,16 @@ The following step is to use step AIC.
 modelo2aic <- stepAIC(model2,direction="both", trace=FALSE)
 summary(modelo2aic)
 ```
-**Checking the VIF
+
+## Multicoliniarity 
+
+**Checking the VIF**
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 vif(modelo2aic)
 ```
+We delete YearBuilt. GVIF^(1/(2*Df))=3.909867 . We have to compare with $\sqrt{10}\approx$ 3.2
+
 ```{r}
 modelovif1<- lm(formula = SalePrice ~ LotArea + BsmtFinSF1 + TotalBsmtSF + 
     GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
@@ -606,6 +612,8 @@ modelovif1<- lm(formula = SalePrice ~ LotArea + BsmtFinSF1 + TotalBsmtSF +
     data = train)
 vif(modelovif1)
 ```
+We delete LotArea. GVIF^(1/(2*Df))=3.661776 . We have to compare with $\sqrt{10}\approx$ 3.2
+
 ```{r}
 modelovif2<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF + 
     GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
@@ -615,38 +623,46 @@ modelovif2<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF +
     Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars, 
     data = train)
 vif(modelovif2)
+summary(modelovif2)
 ```
 
-```{r}
-plot(modelovif2)
-```
-Shapiro test
+## Linearity
 
-H0) normality
-```{r}
-shapiro.test(modelovif2$residuals)
-```
-
-*Comparar el reduce model with full one using ANOVA - FALTA INTERPRETAR*
-
-```{r}
-confint(model2,level=0.95)
-```
-
-If 0 is not in the interval is significative
-
-Interpretation (*FALTA*): Model without so many variables fits better. The RSS decrease much, from 0.68 to 0.58.
-
-*Interpretar*
-
-```{r}
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
 resact <- data.frame(residual = modelovif2$residuals, fitted = modelovif2$fitted.values)
-
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = 0)) + 
     theme(panel.grid = element_blank(), panel.background = element_blank())
 ```
 
-*Interaction between categorical and numeric variables*
+## Normality
+
+Shapiro test
+
+H0 = normality
+
+```{r}
+shapiro.test(modelovif2$residuals)
+qqnorm(residuals(modelovif2))
+qqline(residuals(modelovif2))
+```
+So data do not follow a normal distribution
+
+## Compare reduce model with full one using ANOVA
+
+```{r}
+anova(modelovif2,model2)
+```
+
+Interpretation: Model without so many variables fits better. The RSS decrease much, from 0.68 to 0.58.
+
+
+```{r}
+confint(modelovif2,level=0.95)
+```
+
+If 0 is not in the interval is significative
+
+## Interaction between categorical and numeric variables
 
 The following code, give us the p-value between 2 models. It also creates a file to storage the final results, because this is a process that is a little bit time-consuming. After it will help us to check and compare the p-values for significant iterations.
 
@@ -656,13 +672,19 @@ Usually, we mark as a significant interaction when p<0.05. However, because we h
 
 ```{r}
 dependent_variable <- "SalePrice"
-interaction_matrix <- matrix(0, ncol = ncol(train), nrow = ncol(train), dimnames = list(names(train), names(train)))
+name_vars <- c('BsmtFinSF1','TotalBsmtSF','GrLivArea','OpenPorchSF',
+    'EnclosedPorch','X3SsnPorch','ScreenPorch','BsmtFullBath',
+    'TotRmsAbvGrd','Fireplaces','LotShape','LandContour','LotConfig',
+    'Neighborhood','BldgType','OverallQual','OverallCond','ExterCond',
+    'BsmtQual','BsmtExposure','Electrical','KitchenQual','Condition1',
+    'RoofMatl','dummy_masvnr:MasVnrArea','dummy_garage:GarageCars')
+interaction_matrix <- matrix(0, ncol =  length(name_vars), nrow =  length(name_vars), dimnames = list(name_vars,name_vars))
 
 # Loop through all pairs of variables
-for (i in 1:(ncol(train) - 1)) {
-  variable1 <- names(train)[i]
-  for (j in (i + 1):ncol(train)) {
-    variable2 <- names(train)[j]
+for (i in 1:(length(name_vars))) {
+  variable1 <- name_vars[i]
+  for (j in (i): length(name_vars)) {
+    variable2 <- name_vars[j]
     if (variable1 != dependent_variable && variable2 != dependent_variable && variable1 != variable2) {
       # Run both models
       lmod_all_vars <- lm(as.formula(paste(dependent_variable, "~ BsmtFinSF1 + TotalBsmtSF + 
@@ -671,8 +693,7 @@ for (i in 1:(ncol(train) - 1)) {
     LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
     ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
     Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars +", variable1, ":", variable2)), data = train)
-      lmod_without_inter <- lm(as.formula(paste(dependent_variable, "~ BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
+      lmod_without_inter <- lm(as.formula(paste(dependent_variable, "~ BsmtFinSF1 +TotalBsmtSF + GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
     BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
     LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
     ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
@@ -695,7 +716,7 @@ The next code, allow to get the values lower than 0.05:
 ```{r}
 anova_05 <- read.csv("anova_matrix_05.csv", sep=",")
 # Extract row and column names where values are lower than 0.05
-significant_interactions <- which(anova_05 < 0.005 & anova_05>0, arr.ind = TRUE)
+significant_interactions <- which(anova_05 < 0.001 & anova_05>0, arr.ind = TRUE)
 
 # Print the significant interactions
 for (i in 1:nrow(significant_interactions)) {
@@ -706,7 +727,17 @@ for (i in 1:nrow(significant_interactions)) {
 }
 ```
 
-##Outliers 
+## Outliers
+
+
+```{r}
+par(mfrow=c(2,2))
+plot(modelovif2)
+```
+
+The outliers are: 524, 633, 1325. We are going to remove them.
+The influencial observations are: 524, 629, 1152 (we only delete 524 because is out of Cook's distance)
+
 ```{r}
 modelovif2_outliers<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF + 
     X1stFlrSF + X2ndFlrSF + OpenPorchSF + EnclosedPorch + 
@@ -714,13 +745,33 @@ modelovif2_outliers<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF +
     Fireplaces + MSZoning + LotShape + LandContour + LotConfig + 
     Neighborhood + BldgType + OverallQual + OverallCond + RoofStyle + 
     BsmtQual + BsmtExposure + Electrical + KitchenQual + dummy_masvnr:MasVnrArea + 
-    dummy_garage:GarageCars, data = train[-c(524,629,363),])
-plot(modelovif3_outliers)
+    dummy_garage:GarageCars, data = train[-c(524, 633, 1325),])
 summary(modelovif2_outliers)
 ```
 
+The model R^2 improves and the residual standard error decrease from 0.10 to 0.08
 
-# Hetereosdacity
+```{r}
+par(mfrow=c(2,2))
+plot(modelovif2_outliers)
+```
+There is still outliers at: 561, 775, 1182. We are going to remove them.
+The influencial observations are not out of Cook's distance.
+
+```{r}
+modelovif3_outliers<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF + 
+    X1stFlrSF + X2ndFlrSF + OpenPorchSF + EnclosedPorch + 
+    X3SsnPorch + ScreenPorch + BsmtFullBath + TotRmsAbvGrd + 
+    Fireplaces + MSZoning + LotShape + LandContour + LotConfig + 
+    Neighborhood + BldgType + OverallQual + OverallCond + RoofStyle + 
+    BsmtQual + BsmtExposure + Electrical + KitchenQual + dummy_masvnr:MasVnrArea + 
+    dummy_garage:GarageCars, data = train[-c(524,561, 633,775,1182, 1325),])
+summary(modelovif3_outliers)
+```
+
+As we can not see a signicative improvement in the model, we remain these outliers in the model. We continue with `modelovif2_outliers`
+
+## Hetereosdacity
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_hline(aes(yintercept = 0))
