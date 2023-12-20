@@ -585,8 +585,20 @@ train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4
 model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + Exterior2nd + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ Functional+ FireplaceQu+Heating+BsmtCond+LandSlope+CentralAir+Condition1+RoofMatl,data=train)
 ```
 
-*We delete the variables that are correlated between them:*
-*Next, we have noticed during the assignment that some variables have a correlation BsmtFinType1 and YearRemode (deleting BsmtFinType1- Pero el modelo con ambas funciona), Exterior1st and Exterior2nd (deleting Exterior2nd), MSSubClass and BldgType (deleting MSSUbClass),BsmtCond and BsmtQual(deleting BsmtCond), Functional and dummy_RemodYear:YearRemodAdd also cause errors due to multicollinearity if added to the model.*
+If we were to try to reduce the number of variables using vif, we realize that it returns an error as some variables have a correlation of 1 between them. However, this does not have to do between numeric variables, as we can calculate the correlation values between them and see that none of them is zero:
+{r, cache=FALSE, message=FALSE,warning=FALSE}
+ggcorr(num_train_dataset, label = TRUE, label_size = 2.9, hjust = 1, digits =3,layout.exp = 2)
+
+
+Therefore, the problem is with categorical variables. For getting the values that are causing problems we use the alias function.
+
+{r}
+alias(model1)
+
+
+We check those variables where the correlation between them has either 1 or -1. First we see, correlation for KitchenAbvGr and: MsSubClass and BldgType, so we delete KitchenAbvGr. Computing again the alias we see correlation for MsSubClass and HouseStyle and delete the latter. 
+Our criteria for choosing the variable to delete is based on the description and the variable and the intuition on which one affect more to the sale price. Another important criterion is try to delete those variables that has ones with many variables. 
+With the alias function we delete KitchenAbvGr, HouseStyle, MsSubClass, Electrical, CentralAir, BsmtQual, FireplaceQu, Foundation, Heating, Exterior2, RoofStyle, BsmtExposure and Functional, forming model2.
 
 ```{r}
 model2 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ TotRmsAbvGrd+ Fireplaces + MoSold + MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType  + OverallQual + OverallCond + Exterior1st + ExterQual + ExterCond  + BsmtFinType2 + HeatingQC  + KitchenQual+ BsmtCond+LandSlope+Condition1+RoofMatl,data=train)
@@ -718,6 +730,10 @@ Its better the model with the interactions
 alias(modelovif1_interactions)
 ```
 
+```{r}
+vif(modelovif1)
+```
+
 
 ## Linearity
 
@@ -734,23 +750,22 @@ Shapiro test
 H0 = normality
 
 ```{r}
-shapiro.test(modelovif2$residuals)
-qqnorm(residuals(modelovif2))
-qqline(residuals(modelovif2))
+shapiro.test(modelovif1$residuals)
+qqnorm(residuals(modelovif1))
+qqline(residuals(modelovif1))
 ```
 So data do not follow a normal distribution
 
 ## Compare reduce model with full one using ANOVA
 
 ```{r}
-anova(modelovif2,model2)
+anova(model2,modelovif1, test="Chisq")
 ```
-
-Interpretation: Model without so many variables fits better. The RSS decrease much, from 0.68 to 0.58.
+The model 1 is better (less variable)
 
 
 ```{r}
-confint(modelovif2,level=0.95)
+confint(modelovif1,level=0.95)
 ```
 
 If 0 is not in the interval is significative
@@ -761,49 +776,39 @@ If 0 is not in the interval is significative
 
 ```{r}
 par(mfrow=c(2,2))
-plot(modelovif2)
+plot(modelovif1)
 ```
 
-The outliers are: 524, 633, 1325. We are going to remove them.
+The outliers are:  1325, 474, 899. We are going to remove them.
 The influencial observations are: 524, 629, 1152 (we only delete 524 because is out of Cook's distance)
 
 ```{r}
-modelovif2_outliers<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCarsBsmtFinSF1 + TotalBsmtSF + 
-    X1stFlrSF + X2ndFlrSF + OpenPorchSF + EnclosedPorch + 
-    X3SsnPorch + ScreenPorch + BsmtFullBath + TotRmsAbvGrd + 
-    Fireplaces + MSZoning + LotShape + LandContour + LotConfig + 
-    Neighborhood + BldgType + OverallQual + OverallCond + RoofStyle + 
-    BsmtQual + BsmtExposure + Electrical + KitchenQual + dummy_masvnr:MasVnrArea + 
-    dummy_garage:GarageCars, data = train[-c(524, 633, 1325),])
-summary(modelovif2_outliers)
+modelovif1_outliers<- lm(formula = SalePrice ~ LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + 
+    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + BsmtFinSF1 + 
+    BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + 
+    GrLivArea + dummy_garage:GarageCars + dummy_garage:GarageYrBlt + 
+    dummy_garage:GarageArea + dummy_garage:GarageType + dummy_garage:GarageFinish + 
+    dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + 
+    X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + 
+    FullBath + HalfBath + BedroomAbvGr + TotRmsAbvGrd + Fireplaces + 
+    MoSold + MSZoning + LotShape + LandContour + LotConfig + 
+    Neighborhood + BldgType + OverallQual + OverallCond + Exterior1st + 
+    ExterQual + ExterCond + BsmtFinType2 + HeatingQC + KitchenQual + 
+    BsmtCond + LandSlope + Condition1 + RoofMatl, data = train[-c(474,524,1429,219,899,1325,540,499,561,349,1110,560),])
+summary(modelovif1_outliers)
 ```
 
 The model R^2 improves and the residual standard error decrease from 0.10 to 0.08
 
 ```{r}
 par(mfrow=c(2,2))
-plot(modelovif2_outliers)
+plot(modelovif1_outliers)
 ```
-There is still outliers at: 561, 775, 1182. We are going to remove them.
-The influencial observations are not out of Cook's distance.
-
 ```{r}
-modelovif3_outliers<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF + 
-    X1stFlrSF + X2ndFlrSF + OpenPorchSF + EnclosedPorch + 
-    X3SsnPorch + ScreenPorch + BsmtFullBath + TotRmsAbvGrd + 
-    Fireplaces + MSZoning + LotShape + LandContour + LotConfig + 
-    Neighborhood + BldgType + OverallQual + OverallCond + RoofStyle + 
-    BsmtQual + BsmtExposure + Electrical + KitchenQual + dummy_masvnr:MasVnrArea + 
-    dummy_garage:GarageCars, data = train[-c(524,561, 633,775,1182, 1325),])
-summary(modelovif3_outliers)
+shapiro.test(modelovif1_outliers$residuals)
 ```
 
-As we can not see a signicative improvement in the model, we remain these outliers in the model. We continue with `modelovif2_outliers`
+As we can not see a signicative improvement in the model, we remain these outliers in the model. We continue with `modelovif1_outliers`
 
 ## Hetereosdacity
 
@@ -813,25 +818,49 @@ resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_h
 ```
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-bptest(modelo1aic)
+bptest(modelovif1_outliers)
 ```
+# Model tunning
+
+Since the assumptions are not satisfied we need to explore possible transformations of the response variable:
+
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-vif(model2)
+modelovif1_outliers.boxcox=a=boxcox(modelovif1_outliers,lambda = seq(-10, 2, length.out = 10))
+modelovif1_outliers.boxcox$x[which.max(modelovif1_outliers.boxcox$y)]
+```
+# Model Performance
+
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
+
+
+# RMSE of train dataset
+RMSE(modelovif1_outliers$fitted.values, train$SalePrice)
+
+# RMSE in the test dataset
+modelovif1_outliers_pred <- predict(modelovif1_outliers, newdata = test)
+RMSE(modelovif1_outliers_pred,modelovif1_outliers$fitted.values)
 ```
 
-## Correlation matrix (GGPairs)
 
-```{r}
-ggcorr(num_train_dataset, label = TRUE, label_size = 2, hjust = 1, digits =3,layout.exp = 2)
-```
+The accuracy of the model in predicting the car price is measured with RMSE, with training data has RMSE of 1980.464 and testing data has RMSE of 3081.996, suggesting that our model may overfit the training dataset.
 
 
+If we compare with a the model without one of the variables (for example stroke):
 
 
-##Variable selection:
-Tema 3
+{r, cache=FALSE, message=FALSE,warning=FALSE}
 
+
+mod0.data4=update(mod3,.~.-stroke )
+
+# RMSE of train dataset
+RMSE(pred = (mod0.data4$fitted.values*0.06+1)^(1/0.06), obs = (data_train4$price*0.06+1)^(1/0.06))
+
+# RMSE in the test dataset
+
+mod.data4_pred <- predict(mod0.data4, newdata = data_test4)
+RMSE(pred = (mod.data4_pred*0.06+1)^(1/0.06), obs = (data_test4$price*0.06+1)^(1/0.06))
 
 
 
