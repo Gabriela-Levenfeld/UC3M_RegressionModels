@@ -582,14 +582,15 @@ train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4
 ```
 
 ```{r}
-model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + Exterior2nd + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ Functional+ FireplaceQu+RoofMatl+Condition1+CentralAir+Heating+BsmtCond+LandSlope+CentralAir+Condition1+RoofMatl,data=train)
+model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + Exterior2nd + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ Functional+ FireplaceQu+Heating+BsmtCond+LandSlope+CentralAir+Condition1+RoofMatl,data=train)
 ```
 
 *We delete the variables that are correlated between them:*
 *Next, we have noticed during the assignment that some variables have a correlation BsmtFinType1 and YearRemode (deleting BsmtFinType1- Pero el modelo con ambas funciona), Exterior1st and Exterior2nd (deleting Exterior2nd), MSSubClass and BldgType (deleting MSSUbClass),BsmtCond and BsmtQual(deleting BsmtCond), Functional and dummy_RemodYear:YearRemodAdd also cause errors due to multicollinearity if added to the model.*
 
 ```{r}
-model2 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt+ dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+BsmtFinSF1+BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ FireplaceQu+LandSlope+CentralAir+Condition1+RoofMatl, data=train)
+model2 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ TotRmsAbvGrd+ Fireplaces + MoSold + MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType  + OverallQual + OverallCond + Exterior1st + ExterQual + ExterCond  + BsmtFinType2 + HeatingQC  + KitchenQual+ BsmtCond+LandSlope+Condition1+RoofMatl,data=train)
+alias(model2)
 ```
 
 The following step is to use step AIC.
@@ -606,30 +607,22 @@ summary(modelo2aic)
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 vif(modelo2aic)
 ```
-We delete YearBuilt. GVIF^(1/(2*Df))=3.909867 . We have to compare with $\sqrt{10}\approx$ 3.2
+We delete GrLivArea . GVIF^(1/(2*Df))=4.792750 . We have to compare with $\sqrt{10}\approx$ 3.2
 
 ```{r}
-modelovif1<- lm(formula = SalePrice ~ LotArea + BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars, 
-    data = train)
+modelovif1<- lm(formula = SalePrice ~ LotArea + TotalBsmtSF + X2ndFlrSF +
+                  OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
+    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
+    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
+    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
+    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
+    dummy_garage:GarageCond, data = train)
 vif(modelovif1)
 ```
-We delete LotArea. GVIF^(1/(2*Df))=3.661776 . We have to compare with $\sqrt{10}\approx$ 3.2
+We decide to keep LotArea even though the GVIF^(1/(2*Df))=3.353705. We have to compare with $\sqrt{10}\approx$ 3.2
 
 ```{r}
-modelovif2<- lm(formula = SalePrice ~ BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars, 
-    data = train)
-vif(modelovif2)
-summary(modelovif2)
+summary(modelovif1)
 ```
 ## Interaction between categorical and numeric variables
 
@@ -641,12 +634,13 @@ Usually, we mark as a significant interaction when p<0.05. However, because we h
 
 ```{r}
 dependent_variable <- "SalePrice"
-name_vars <- c('BsmtFinSF1','TotalBsmtSF','GrLivArea','OpenPorchSF',
-    'EnclosedPorch','X3SsnPorch','ScreenPorch','BsmtFullBath',
-    'TotRmsAbvGrd','Fireplaces','LotShape','LandContour','LotConfig',
-    'Neighborhood','BldgType','OverallQual','OverallCond','ExterCond',
-    'BsmtQual','BsmtExposure','Electrical','KitchenQual','Condition1',
-    'RoofMatl','dummy_masvnr:MasVnrArea','dummy_garage:GarageCars')
+name_vars <- c('LotArea' , 'TotalBsmtSF' , 'X2ndFlrSF' , 
+    'OpenPorchSF' , 'EnclosedPorch' , 'ScreenPorch' , 'BsmtFullBath' , 
+    'BsmtHalfBath' , 'HalfBath' , 'BedroomAbvGr' , 'LandContour' , 'Neighborhood' , 
+    'BldgType' , 'OverallQual' , 'OverallCond' , 'Exterior1st' , 'ExterCond' , 
+    'HeatingQC' , 'Condition1' , 'RoofMatl' , 'dummy_RemodYear:YearRemodAdd' , 
+    'dummy_masvnr:MasVnrArea' , 'dummy_masvnr:MasVnrType' , 'dummy_garage:GarageArea' , 
+    'dummy_garage:GarageCond')
 interaction_matrix <- matrix(0, ncol =  length(name_vars), nrow =  length(name_vars), dimnames = list(name_vars,name_vars))
 
 # Loop through all pairs of variables
@@ -656,17 +650,20 @@ for (i in 1:(length(name_vars))) {
     variable2 <- name_vars[j]
     if (variable1 != dependent_variable && variable2 != dependent_variable && variable1 != variable2) {
       # Run both models
-      lmod_all_vars <- lm(as.formula(paste(dependent_variable, "~ BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars +", variable1, ":", variable2)), data = train)
-      lmod_without_inter <- lm(as.formula(paste(dependent_variable, "~ BsmtFinSF1 +TotalBsmtSF + GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars -", variable1, ":", variable2)), data = train)
+      lmod_all_vars <- lm(as.formula(paste(dependent_variable, "~ LotArea + TotalBsmtSF + X2ndFlrSF + 
+    OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
+    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
+    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
+    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
+    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
+    dummy_garage:GarageCond +", variable1, ":", variable2)), data = train)
+      lmod_without_inter <- lm(as.formula(paste(dependent_variable, "~ LotArea + TotalBsmtSF + X2ndFlrSF + 
+    OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
+    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
+    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
+    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
+    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
+    dummy_garage:GarageCond -", variable1, ":", variable2)), data = train)
     
       anova_result <- anova(lmod_all_vars, lmod_without_inter)
       interaction_matrix[variable1, variable2] <- anova_result[2, "Pr(>F)"]
@@ -685,7 +682,7 @@ The next code, allow to get the interactions with test value lower than 0.05:
 ```{r}
 anova_05 <- read.csv("anova_matrix_05.csv", sep=",")
 # Extract row and column names where values are lower than 0.05
-significant_interactions <- which(anova_05 < 0.001 & anova_05>0, arr.ind = TRUE)
+significant_interactions <- which(anova_05 < 0.05 & anova_05>0, arr.ind = TRUE)
 
 # Print the significant interactions
 for (i in 1:nrow(significant_interactions)) {
@@ -695,63 +692,37 @@ for (i in 1:nrow(significant_interactions)) {
 }
 ```
 
-```{r}
-modelovif2_interactions <- lm(formula= SalePrice~ BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars + TotalBsmtSF : GrLivArea +TotalBsmtSF : LandContour +GrLivArea : LandContour +OpenPorchSF : LandContour +TotRmsAbvGrd : LandContour +TotalBsmtSF : Neighborhood +GrLivArea : Neighborhood +TotRmsAbvGrd : Neighborhood +GrLivArea : OverallQual +TotRmsAbvGrd : ExterCond  +GrLivArea : KitchenQual +TotalBsmtSF : Condition1 +GrLivArea : Condition1 +LandContour : dummy_masvnr:MasVnrArea +Neighborhood : dummy_masvnr:MasVnrArea +LandContour : dummy_garage:GarageCars +Condition1 : dummy_garage:GarageCars , data=train)
-
-summary(modelovif2_interactions)
-modelovif2_interactions_stepAIC <- stepAIC(modelovif2_interactions, direction = 'both', trace=FALSE)
-summary(modelovif2_interactions_stepAIC)
-```
-```{r}
-modelovif2_interactions2 <- lm(formula= SalePrice~ BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars + Condition1:dummy_garage:GarageCars, data=train)
-
-anova(modelovif2, modelovif2_interactions2)
-```
-TotalBsmtSF:GrLivArea (si) + TotalBsmtSF:LandContour (si) + GrLivArea:LandContour (si) + OpenPorchSF:LandContour (si) + GrLivArea:OverallQual (si) + TotRmsAbvGrd:ExterCond (si)  + TotalBsmtSF:Condition1 (si) +GrLivArea:Condition1 (si)+ Condition1:dummy_garage:GarageCars (si)
-
++TotalBsmtSF : Neighborhood +HalfBath : Neighborhood +EnclosedPorch : OverallCond +
 
 ```{r}
-modelovif2_interactions3 <- lm(formula= SalePrice~ BsmtFinSF1 + TotalBsmtSF + 
-    GrLivArea + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + 
-    BsmtFullBath + TotRmsAbvGrd + Fireplaces + LotShape + LandContour + 
-    LotConfig + Neighborhood + BldgType + OverallQual + OverallCond + 
-    ExterCond + BsmtQual + BsmtExposure + Electrical + KitchenQual + 
-    Condition1 + RoofMatl + dummy_masvnr:MasVnrArea + dummy_garage:GarageCars + TotalBsmtSF:GrLivArea + TotalBsmtSF:LandContour + GrLivArea:LandContour + OpenPorchSF:LandContour + GrLivArea:OverallQual + TotRmsAbvGrd:ExterCond  + TotalBsmtSF:Condition1 +GrLivArea:Condition1 + Condition1:dummy_garage:GarageCars , data=train)
+modelovif1_interactions <- lm(formula= SalePrice~ LotArea + TotalBsmtSF + X2ndFlrSF + 
+    OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
+    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
+    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
+    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
+    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
+    dummy_garage:GarageCond +TotalBsmtSF : Neighborhood +HalfBath : Neighborhood +EnclosedPorch : OverallCond, data = train)
 
-summary(modelovif2_interactions3)
-
-anova(modelovif2, modelovif2_interactions3)
-
-modelovif2_interactions_stepAIC2 <- stepAIC(modelovif2_interactions3, direction = 'both', trace=FALSE)
-summary(modelovif2_interactions_stepAIC2)
-
+summary(modelovif1_interactions)
+modelovif1_interactions_stepAIC <- stepAIC(modelovif1_interactions, direction = 'both', trace=FALSE)
+summary(modelovif1_interactions_stepAIC)
 ```
+```{r}
+anova(modelovif1, modelovif1_interactions)
+```
+Its better the model with the interactions
 
-
+## MULTICOLINEARITY AGAIN
 
 ```{r}
-a<-predict(modelovif2_interactions2, data=test)
-RMSE(a, train$SalePrice)
-
+alias(modelovif1_interactions)
 ```
-
-
 
 
 ## Linearity
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-resact <- data.frame(residual = modelovif2$residuals, fitted = modelovif2$fitted.values)
+resact <- data.frame(residual = modelovif1$residuals, fitted = modelovif1$fitted.values)
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = 0)) + 
     theme(panel.grid = element_blank(), panel.background = element_blank())
 ```
