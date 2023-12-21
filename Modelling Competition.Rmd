@@ -1,14 +1,12 @@
 ---
 title: "Modelling Competition: House Prices"
 author: 
-- Marcos Crespo Díaz
-- Miguel Díaz-Plaza Cabrera
-- Gabriela Levenfeld Sabau
 - Roberto Alvarez Llordachs
-- Sofía Gianelli Nan
 - Javier Goñi Artieda
-
-
+- Marcos Crespo Díaz
+- Gabriela Levenfeld Sabau
+- Sofía Gianelli Nan
+- Miguel Díaz-Plaza Cabrera
 date: "`r Sys.Date()`"
 output:
   pdf_document: 
@@ -26,11 +24,11 @@ knitr::opts_chunk$set(echo = TRUE,warning=FALSE, message=FALSE, cache=TRUE)
 
 House prices have sparked lot of debate recently in our society. Currently, this topic has aroused controversy on the grounds that has been a cornerstone in 2008 crisis. Were buyers to decide a model for setting the selling price, which factors would be included and what would be their weight?
 
-The goal of this project is to create a effective price prediction model.
+The goal of this project is to create a effective price prediction model, identifying the most important home price attributes.
 
 # Libraries
 
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
 library(skimr)
 library(dplyr)
 library(tidyverse)
@@ -45,6 +43,9 @@ library(MASS)
 library(lmtest)
 library(base)
 library(corrplot)
+library(ggplot2)
+library(psych)
+library(pander)
 ```
 
 # Data Preparation
@@ -56,30 +57,27 @@ train_original <- read.csv("train.csv", sep=",")
 test_original <- read.csv("test.csv", sep=",")
 ```
 
-```{r}
+```{r, echo=FALSE}
 train <- train_original
 test <- test_original 
 ```
 
-
-We are going to work with the target variable (SalePrice) in log
+We are going to work with the target variable (SalePrice) in log units.
 
 ```{r}
 train$SalePrice<-log(train$SalePrice)
 ```
 
-## We make EDA (Exploratory Data Analysis) of the test set
+We are only going to work with the train database because the test set is for studying the accuracy of the model.
 
-We are only going to work with the test set due to the test set is for studying the accuracy of the model.
-
-```{r}
+```{r, echo=FALSE}
+#Small Exploratory Data Analysis
 skim(train) 
 skim(test)
 #Presents results for every column; the statistics it provides depend on the class of the variable
 ```
 
-
-```{r}
+```{r, echo=FALSE}
 # Ordenar las columnas por tipo de variable (Las 25 primeras son continuas)
 train <- train[,c(1,81,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,76,78,48,49,50,51,52,53,55,57,62,77,2,3,6,7,8,9,10,11,12,13,14,15,16,17,18,19,22,23,24,25,26,28,29,30,31,32,33,34,36,40,41,42,43,54,56,58,59,61,64,65,66,73,74,75,79,80)]
 
@@ -88,8 +86,7 @@ test <- test[,c(1,4,5,20,21,27,35,37,38,39,44,45,46,47,60,63,67,68,69,70,71,72,7
 
 ID columns is irrelevant so we can delete it. The number of the observation is given by the row of each dataset.
 
-```{r}
-# Eliminate the ID columns
+```{r delete ID}
 train <- train[,-1]
 test <- test[,-1]
 ```
@@ -98,37 +95,31 @@ test <- test[,-1]
 
 Looking at the dataset, we observe that some of the variables have great deal of NA values. Therefore, it may interesting to quantify these numbers and later think on future actions.
 
-```{r}
+```{r NA count}
 # Counting NA: train and express in %
 Number_NA_train<-(colSums(is.na(train))/nrow(train))*100
 sort(Number_NA_train,decreasing = TRUE)
-```
-
-```{r}
 # Counting NA: test and express in %
 Number_NA_test<-(colSums(is.na(test))/nrow(test))*100
 sort(Number_NA_test,decreasing = TRUE)
 ```
 
-Acoording to the high percentage of NA, we are going to eliminate the variables "PoolQC" and the associated numerical one, "PoolArea". The same occur with "MiscFeature" and "MiscVal" (numerical), "Fence" and "Alley". 
+What should we do with the variables that have more missing values than existing ones? Maintaining them can we a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. Consequently, we are going to delete the variables, where the percentage of NA is high (>80%). They are: "PoolQC" and the associated numerical one, "PoolArea", "MiscFeature" and "MiscVal" (numerical), "Fence" and "Alley". 
 
 Other variables are going to be deleted due to the great deal of values in a single category, which would imply that the rest of the categories are seen as outliers. This is the case of: Utilities, Street, Condition2, and PavedDrive.
 
-Furthermore, we delete some variables as we consider to have the similar meaning, those that have Qual and Cond:
-  
-  - GarageQual and GarageCond, deleting GarageQual.
+Furthermore, we consider that two variables have a similar meaning, GarageQual and GarageCond, so we delete one of them, GarageQual.
 
-Finally, some numerical variables have for most of their observations (>90%) the same value, so for the same reason are going to be deleted. This is LowQualFinSF. 
+Finally, checking numerical variables we observe that LowQualFinSF, have most of their observations (>90%) at the same value, so we delete it. 
 
-```{r}
+```{r deleting values}
 train <- train[,-c(13,22,23,37,38,73,75,76,77,78,41,46)]
 test <- test[,-c(12,21,22,36,37,72,74,75,76,77,40,45)]
 ```
 
-What should we then do this those variables that have more missing values than existing ones? Maintaining them can we a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. 
-However, NA values have a meaning in most of the cases where its percentage is high. For example, in PoolQC it means that the house does not have pool, in Alley means that the house no alley access... Consequently, we should change NA for None so that they will later appear when displaying these variables values.
+In most of the cases, NA´s have meaning, it means that the house lack of the object mentioned. For example, in the variable FirePlaceQu, NA means no fireplaces. Those that start with MasVnr, the NA means that we have no Masonry veneer area. (the NA means that the house has no basement, for Bsmt... variables, no garage in the houses where we find a NA in garage...). Consequently, we should change NA for None so that they will later appear when displaying these variables values and 0 for numerical ones. We checked that numerical variables that do not have NAs (GarageArea or GarageCars) have the same percentage of 0´s that we have for NA´s.
 
-```{r}
+```{r replace na, echo=FALSE}
 train$BsmtFinType1 <- ifelse(is.na(train$BsmtFinType1),"None",train$BsmtFinType1)
 train$BsmtCond <- ifelse(is.na(train$BsmtCond),"None",train$BsmtCond)
 train$BsmtQual <- ifelse(is.na(train$BsmtQual),"None",train$BsmtQual)
@@ -143,6 +134,7 @@ train$GarageArea <- ifelse(is.na(train$GarageArea),0,train$GarageArea)
 train$GarageCars <- ifelse(is.na(train$GarageCars),0,train$GarageCars)
 train$GarageYrBlt <- ifelse(is.na(train$GarageYrBlt),0,train$GarageYrBlt)
 train$MasVnrArea <- ifelse(is.na(train$MasVnrArea),0,train$MasVnrArea)
+
 test$BsmtFinType1 <- ifelse(is.na(test$BsmtFinType1),"None",test$BsmtFinType1)
 test$BsmtCond <- ifelse(is.na(test$BsmtCond),"None",test$BsmtCond)
 test$BsmtQual <- ifelse(is.na(test$BsmtQual),"None",test$BsmtQual)
@@ -159,13 +151,11 @@ test$GarageYrBlt <- ifelse(is.na(test$GarageYrBlt),0,test$GarageYrBlt)
 test$MasVnrArea <- ifelse(is.na(test$MasVnrArea),0,test$MasVnrArea)
 ```
 
-Checking Garage variables we suspect that the NA correspond to not having a garage. When the variable is categorical we change it for None, but the problem comes when it is numerical, as imputing 0 for the missing values makes no sense. Numerical variables associated with garage, such as GarageArea or GarageCars have a value of 0 when there is no garage, which as mentioned, makes no sense. Therefore, we will create a dummy variable for first checking if the house has or not garage, so having missing values in GarageYrBuild would not cause a problem. The creation of a dummy variable, allow us to transform the 0 values of GarageArea and GarageCars to NA´s, so as not to affect the mean, median... 
+At first we decided to create dummy variables for garage variables, YearRemodAdd and MasVnr variables,as we thought that imputing 0 for the missing values makes no sense in the numerical variables, as distort the means and other measures. The dummy will equal 0 when the house has no garage and 1 when yes, so we would replace the 0´s of numerical variables to NA´s, as it does not matter their value as would be multiplied by 0. However, at the end, when computing the error we were having problems with the NA´s. Therefore, we continue with the above described model.
 
-Same process would be applied to other variables, such as MasVnrArea, MasVnrType.
+We will fix the rest of the missing values in the test data, changing for the mode in categorical variables and for the median in numerical ones.
 
-We will fix the missing values in the test data, changing for the mode in categorical variables and for the median in numerical ones.
-
-```{r}
+```{r na en test,echo=FALSE}
 train$Electrical <- ifelse(is.na(train$Electrical),"SBrkr",train$Electrical) 
 test$SaleType <- ifelse(is.na(test$SaleType),"WD",test$SaleType)
 test$KitchenQual <- ifelse(is.na(test$KitchenQual),"TA",test$KitchenQual)
@@ -183,7 +173,7 @@ test$MSZoning<- ifelse(is.na(test$MSZoning),"RL",test$MSZoning)
 
 It is worth to mention the case of LotFrontage, as the amount of missing values is high, special attention should be paid. Instead of computing just the median of the data, we have used a multivariate imputation method, so that we have make the median based on other attribute that is related to this variable, such as the neighborhood, with the idea that in the same neighborhood the LotFrontage would be similar.
  
-```{r frontage}
+```{r frontage echo=FALSE}
 # Calcular la mediana por grupo utilizando tapply
 medianas_por_grupo_train <- tapply(train$LotFrontage, train$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
 medianas_por_grupo_test <- tapply(test$LotFrontage, test$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
@@ -197,20 +187,18 @@ test$LotFrontage <- ifelse(is.na(test$LotFrontage), medianas_por_grupo_test[matc
 
 ```
 
-```{r}
+```{r check,echo=FALSE}
 #Inicialmente tenemos 259 missing values.
 sum(is.na(train$LotFrontage))
 sum(is.na(test$LotFrontage))
 # Ahora ya tenemos 0 missing values
 ```
 
-Additionally we see that YearRemodAdd, has construction date if no remodeling or additions have been made. For us that makes no sense, we will create a dummy variable if the house have been remodel and include NA´s when no remodel has been made, so as not to affect the mean, minimum and maximum.
-
 Other important action in data preprocessing is to check if there are duplicated categories referring to the same thing. That was done manually and it seems that no duplicated categories exist.
 
-Moreover, we should check if there are duplicated observations, using the duplicated functions.
+Moreover, we should check if there are duplicated observations, using the duplicated functions. There are not.
 
-```{r duplicates}
+```{r duplicates, echo=FALSE}
 sum(duplicated(train))
 sum(duplicated(test))
 ```
@@ -219,7 +207,7 @@ sum(duplicated(test))
 
 Next, the goal is to modify categorical variables as a factor so as to work with them.
 
-```{r}
+```{r, echo=FALSE}
 train <- train %>% mutate_if(~is.character(.), ~as.factor(.))
 #Nonetheless not all categorical variables are character defined, we modify using factor those who aren´t
 train$OverallQual <- factor(train$OverallQual)
@@ -233,10 +221,9 @@ test$OverallCond <- factor(test$OverallCond)
 test$MSSubClass <- factor(test$MSSubClass)
 ```
 
-**CON OVERALL's NO SABEMOS AUN SI TRATAR COMO NUMERICA O COMO CATEGORICA**
 One important feature is to check that categories exist in both, train and test. Why? It makes no sense to train a model with a category that will no appear in the testing part and viceversa, as we would try to predict something that exceeds out input of the model.
 
-```{r}
+```{r, echo=FALSE}
 obtener_diferencia_categorias <- function(dataframe1, dataframe2) {
   nombres_categorias_df1 <- list()
   nombres_categorias_df2 <- list()
@@ -276,9 +263,9 @@ print("Nombres de categorías presentes en dataframe_1 pero no en dataframe_2:")
 print(categorias_diferentes)
 ```
 
-Once with have the categories that differ, we will replace in the dataset that contains the category that does not occur in the other dataset for the mode of the variable, and delete the category.
+Once with have the categories that differ, we will replace in the dataset that contains the category that does not occur in the other dataset, the values of those category for the mode of the variable, and delete the category.
 
-```{r}
+```{r, echo=FALSE}
 # HouseStyle
 train$HouseStyle <- replace(train$HouseStyle, train$HouseStyle == "2.5Fin", "1Story")
 train$HouseStyle <- droplevels(train$HouseStyle, exclude= "2.5Fin")
@@ -312,88 +299,239 @@ test$MSSubClass <- replace(test$MSSubClass, test$MSSubClass == '150', '20')
 test$MSSubClass <- droplevels(test$MSSubClass, exclude =  '150')
 ```
 
-## Numeric data handling (outliers and scaling):
+## Numeric data handling:
 
 Once we have categorical variables in order, we should focus our attention on quantitative data. 
 
-```{r}
-#We extract a dataset only with quantitative data (34 variables)
+```{r,echo=FALSE}
+#We extract a dataset only with quantitative data (32 variables)
 num_train_dataset <- train %>% select_if(is.numeric)
 num_test_dataset <- test %>% select_if(is.numeric)
 ```
 
-We will focus first on the outliers, observations that are far away from the regression line (*Meter sino una def y aprovechar para bibliografía*). They do not affect the estimated model, unless the observation has high leverage. It tends to increase the variability among the variable affecting the negatively the variability explained by the model, making it become worse. 
-Comparing the maximum values and the means of some of the variables we suspect the existence of outliers due to the huge differences between them. 
-
-```{r}
+```{r, echo=FALSE}
 summary(num_train_dataset)
 summary(num_test_dataset)
-
-
-#cooks.distance() #Creo que no nos sirve, probar con esto: https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/influence.measures
-
-#Para el scaling alguien que entienda que mire los graficos de abajo. Yo creo que alguna hay que hacer log.
 ```
 
 # Exploratory Analysis
 
-In the first part, we will carry out a descriptive analysis of several variables to understand them better. Graphs will help us to reach this goal, histograms for continuous variables and box-plots for categorical variables.
+## Correlation
 
-It would be useful to analyse the categorical variables, seeing most popular categories for each variables.
+To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
+
+```{r, fig.height=7,fig.width=7,echo=FALSE}
+correlation_matrix <- cor(num_train_dataset,use='pairwise.complete.obs')
+rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
+corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7, type="upper")
+```
+
+```{r, cache=FALSE, message=FALSE,warning=FALSE,echo=FALSE}
+ggcorr(num_train_dataset, label = TRUE, label_size = 2.9, hjust = 1, digits =3,layout.exp = 2)
+```
+
+The response variable, Sale Price, is strongly influenciated by the GrLivArea, GarageArea and GarageCars. Other important variables are FullBath, YearBuild, YearRemodAdd or TotalBsmtSF.
+
+```{r, echo=FALSE}
+ggplot(train, aes(x = factor(GarageCars), y = SalePrice, fill = factor(GarageCars))) +
+  geom_bar(stat = "identity", position = "dodge", alpha = 0.7) +
+  labs(x = "GarageCars", y = "SalePrice", title = "Bar Plot: GarageCars & SalePrice") +
+  scale_fill_discrete(name = "GarageCars")
+```
+
+We can see that the greater the size of the garage (in car capacity), the higher the sale price of the house tend to be. 
+
+```{r,echo=FALSE}
+ggplot(train, aes(x = YearBuilt, y = SalePrice)) +
+  geom_line() +
+  labs(x = "YearBuilt", y = "SalePrice", title = "Line Plot: SalePrice Vs YearBuilt")
+```
+
+We see that the trend is positive, the newer the house is, the greater the house would be. Therefore, it makes sense that they have a positive correlation.
+
+```{r,echo=FALSE}
+ggplot(train, aes(x = GrLivArea, y = SalePrice)) +
+  geom_line() +
+  labs(x = "GrLivArea", y = "SalePrice", title = "Line Plot: SalePrice Vs GrLivArea")
+```
+
+The last graph reinforce the idea of positive and high correlation between GrLivArea and SalePrice. Naturally, bigger house are more expensive.
+
+When it comes to the correlation between numerical predictions we see that there is high correlation between:
+
+- GarageCars - GarageArea
+
+- TotalBsmtSF - X1stFlr
+
+- TotRmsAbvGrd - GrLivArea
+
+Nonetheless, none of them have perfect correlation, so we cannot delete any variable.
+
+Finally, we wanted to mentioned the seasonality appreciated in the variable YearSold, which surprised us. It can be caused by the economic cycles, in contraction times, despite being the houses cheaper, buyer do not tend to have much savings.
+
+```{r, echo=FALSE}
+##ARREGLAR ESTE CODIGO:
+ggplot(datos, aes(x = YearSold)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(x = "Año de Venta", y = "Frecuencia", title = "Histograma de Año de Venta")
+
+ggplot(datos, aes(x = YearSold)) +
+  geom_density(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(x = "Año de Venta", y = "Densidad", title = "Gráfica de Densidad de Año de Venta")
+```
 
 
+```{r,include=FALSE}
+#In the first part, we will carry out a descriptive analysis of several variables to understand them better. Graphs will help us to reach this goal, histograms for continuous variables and frequency tables for categorical variables.
 
-## GGPairs
+#Box-Plots
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan", "magenta", "darkgreen", "lightblue")
 
-Next step is to get the scatter plot for the quantitative features (24 variables) in order to decide which transformation we will apply them (just if it is necessary).
+#1 is sale price
+for (i in 2:13) {
+  col_name <- colnames(num_train_dataset)[i]
+  boxplot(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 1], 
+       breaks = 5)
+}
+```
 
-```{r, warning=FALSE, message=FALSE}
+```{r,include=FALSE}
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan", "magenta", "darkgreen","lightblue")
+
+for (i in 14:25) {
+  col_name <- colnames(num_train_dataset)[i]
+  boxplot(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 13],
+       breaks = 5)
+}
+```
+
+```{r,include=FALSE}
+par(mfrow = c(3, 3))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan")
+
+for (i in 26:31) {
+  col_name <- colnames(num_train_dataset)[i]
+  boxplot(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 25],
+       breaks = 5)
+}
+```
+
+```{r,include=FALSE}
+#Histograms
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan", "magenta", "darkgreen", "lightblue")
+
+for (i in 1:12) {
+  col_name <- colnames(num_train_dataset)[i]
+  hist(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 1], 
+       breaks = 5)
+}
+```
+
+```{r,include=FALSE}
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan", "magenta", "darkgreen","lightblue")
+
+for (i in 13:24) {
+  col_name <- colnames(num_train_dataset)[i]
+  hist(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 12],
+       breaks = 5)
+}
+```
+
+```{r, include=FALSE}
+par(mfrow = c(3, 4))
+colours <- c("red", "blue", "green",
+             "orange", "purple", "pink",
+             "brown", "gray", "cyan", "magenta")
+
+for (i in 25:31) {
+  col_name <- colnames(num_train_dataset)[i]
+  hist(num_train_dataset[, i], 
+       main = col_name,
+       xlab = "Values", 
+       col = colours[i - 24],
+       breaks = 5)
+}
+```
+
+```{r,include=FALSE}
+#It would be useful to analyse the categorical variables, seeing most popular categories for each variables.
+# Lista de columnas categóricas
+columnas_categoricas <- colnames(train)[sapply(train, is.factor)]
+columnas_categoricas
+tablas_frecuencia <- list()
+#INTENTO 1
+# Iterar sobre cada columna categórica y crear la tabla de frecuencia
+for (col in columnas_categoricas) {
+  tablas_frecuencia[[col]] <- table(train[[col]])
+}
+# Mostrar las tablas de frecuencia
+tablas_frecuencia
+```
+
+## Variable Transformations
+
+```{r, warning=FALSE, message=FALSE, include=FALSE}
+#Next step is to get the scatter and density plots for the quantitative features (31 variables) in order to decide which transformation we will apply them (just if it is necessary).
 ggpairs(train[,1:12],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, include=FALSE}
 ggpairs(train[,c(1,13:24)],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE, include=FALSE}
 ggpairs(train[,c(1,25:31)],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
 
-**Negative skeweness**:
-
--   YearBuilt, YearRemodAdd, GarageYrBlt.
-
--   For this variables we could apply a ^2 transformation. However after trying this, we observed that there is no any improvement.
-
-**Positive skeweness**:
-
--   The rest of the variables have positive skewness, so the proper transformation will be a log transformation. After trying to transform these variables, there is no improvement in some of them, so they will remain as the original ones. It is worth to mention that we have done log(X+1) so as to avoid errors with zero values. We have applied it to: BsmtFinSF1, BsmtFinSF2, BsmtUnfSF, GarageArea, WoodDeckSF and OpenPorchSF.
-
-**Others**
-
--   YrSold;-> This variable has seasonality, there are some years where more sales occur. This makes sense as could depend on the economic cycles. *Buscar tranformación*.
-
-```{r warning=FALSE, message=FALSE,echo=FALSE}
-library(psych)
-library(pander)
-skewness <- round(skew(train[,1:21]), 1)
-result_df <- data.frame(variable = colnames(train[,1:21]), skewness = skewness)
+```{r warning=FALSE, message=FALSE,include=FALSE}
+#This code is used to obtain the skewnees, which help us to decide also the variables to transform
+skewness <- round(skew(train[,1:31]), 1)
+result_df <- data.frame(variable = colnames(train[,1:31]), skewness = skewness)
 pander(result_df)
 ```
 
-```{r}
-# Check if the quantitative feature has a cero or not. This will influence our choice for the traanformation
+```{r,include=FALSE}
+# Check if the quantitative feature has a cero or not. This will influence our choice for the tranformation
 counter <- 0
-for (i in head(names(train), 21)) {
+for (i in head(names(train), 31)) {
   if (any(!is.na(train[[i]]) & train[[i]] == 0)) {
     counter <- counter + 1
     print(paste("Column '", i, "' has at least one zero value.", sep = ""))
@@ -401,10 +539,7 @@ for (i in head(names(train), 21)) {
 }
 ```
 
-```{r apply_transformations}
-# Positive skewness
-# 1/x because there are severe skewness
-#train[,c(3,11)] <- 1/train[,c(3,11)]
+```{r apply_transformations,include=FALSE}
 # sqrt negative
 train[,c(14)] <- sqrt(max(train[,c(14)])+1-train[,c(14)])
 # sqrt positive
@@ -415,35 +550,40 @@ train[,c(2,11,13,14)] <- log(train[,c(2,11,13,14)])
 train[,c(3,6,7,10,12,16,17,22,24,25,27,29)] <- log(train[,c(3,6,7,10,12,16,17,22,24,25,27,29)]+1)
 ```
 
-In order to check if we archive the normality distributions on the variables thanks to the transformations apply, we plot again the scatters plots.
+Different transformation have been applied to different variables, they are:
 
-```{r, warning=FALSE, message=FALSE}
+  - 
+  
+  - Square root: 
+  
+  - Logarithm: Applied to the variables that have a positive skewness, that are right-tailed. 
+  
+  - Logarithm (X+1): Same argue as above, but this was done for variables that have zero values, so as to avoid errors. It was applied to 
+
+
+```{r, warning=FALSE, message=FALSE, include=FALSE}
+#In order to check if we archive the normality distributions on the variables thanks to the transformations apply, we plot again the scatters plots.
 ggpairs(train[,1:12],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE,include=FALSE}
 ggpairs(train[,c(1,13:24)],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
 
-```{r, warning=FALSE, message=FALSE}
+```{r, warning=FALSE, message=FALSE,include=FALSE}
 ggpairs(train[,c(1,25:31)],aes(fill="pink"),
         lower = list(continuous = "points"),
         title = "Scatter Plot Matrix") +
   theme_light(base_size=8)
 ```
 
-
-**NO LAS INCLUIMOS EN EL MODELO, TIENEN MUCHOS 0, NOS HEMOS DADO CUENTA AHORA.**
-
-```{r}
-train<-train[,-c(8,18,19,20,23)]
-```
+Exploratory analysis has helped us to realize that other variables have lot of zero values, which make impossible to normalize them. Arguing the same idea explained in the data-preprocessing, we will delete from our database. The variables that will be excluded are:
 
 - BsmtFinSF2
 
@@ -455,24 +595,11 @@ train<-train[,-c(8,18,19,20,23)]
 
 - BsmtHalfBath
 
-
-## Correlation
-
-To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
-
-```{r, fig.height=7,fig.width=7}
-correlation_matrix <- cor(train[1:26],use='pairwise.complete.obs')
-rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
-corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7, type="upper")
+```{r, include=FALSE}
+train<-train[,-c(8,18,19,20,23)]
 ```
 
-There is correlation between:
 
-- GarageCars - GarageArea
-
-- GarageCars - GarageYrBlt
-
-- TotRmsAbvGrd - GrLivArea
 
 # Model:
 
