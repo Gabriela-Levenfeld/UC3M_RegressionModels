@@ -137,6 +137,10 @@ train$GarageCond <- ifelse(is.na(train$GarageCond),"None",train$GarageCond)
 train$GarageFinish <- ifelse(is.na(train$GarageFinish),"None",train$GarageFinish)
 train$GarageType <- ifelse(is.na(train$GarageType),"None",train$GarageType)
 train$MasVnrType <- ifelse(is.na(train$MasVnrType),"None",train$MasVnrType)
+train$GarageArea <- ifelse(is.na(train$GarageArea),0,train$GarageArea)
+train$GarageCars <- ifelse(is.na(train$GarageCars),0,train$GarageCars)
+train$GarageYrBlt <- ifelse(is.na(train$GarageYrBlt),0,train$GarageYrBlt)
+train$MasVnrArea <- ifelse(is.na(train$MasVnrArea),0,train$MasVnrArea)
 test$BsmtFinType1 <- ifelse(is.na(test$BsmtFinType1),"None",test$BsmtFinType1)
 test$BsmtCond <- ifelse(is.na(test$BsmtCond),"None",test$BsmtCond)
 test$BsmtQual <- ifelse(is.na(test$BsmtQual),"None",test$BsmtQual)
@@ -147,29 +151,20 @@ test$GarageCond <- ifelse(is.na(test$GarageCond),"None",test$GarageCond)
 test$GarageFinish <- ifelse(is.na(test$GarageFinish),"None",test$GarageFinish)
 test$GarageType <- ifelse(is.na(test$GarageType),"None",test$GarageType)
 test$MasVnrType <- ifelse(is.na(test$MasVnrType),"None",test$MasVnrType)
+test$GarageArea <- ifelse(is.na(test$GarageArea),0,test$GarageArea)
+test$GarageCars <- ifelse(is.na(test$GarageCars),0,test$GarageCars)
+test$GarageYrBlt <- ifelse(is.na(test$GarageYrBlt),0,test$GarageYrBlt)
+test$MasVnrArea <- ifelse(is.na(test$MasVnrArea),0,test$MasVnrArea)
 ```
 
 Checking Garage variables we suspect that the NA correspond to not having a garage. When the variable is categorical we change it for None, but the problem comes when it is numerical, as imputing 0 for the missing values makes no sense. Numerical variables associated with garage, such as GarageArea or GarageCars have a value of 0 when there is no garage, which as mentioned, makes no sense. Therefore, we will create a dummy variable for first checking if the house has or not garage, so having missing values in GarageYrBuild would not cause a problem. The creation of a dummy variable, allow us to transform the 0 values of GarageArea and GarageCars to NA´s, so as not to affect the mean, median... 
 
 Same process would be applied to other variables, such as MasVnrArea, MasVnrType.
 
-```{r garage}
-train$GarageArea<- ifelse(train$GarageArea==0,NA,train$GarageArea)
-train$GarageCars<- ifelse(train$GarageCars==0,NA,train$GarageCars)
-train$MasVnrArea<-ifelse(train$MasVnrArea==0,NA,train$MasVnrArea)
-train$GarageYrBlt<-ifelse(train$GarageYrBlt==0,NA,train$GarageYrBlt)
-
-test$GarageArea<- ifelse(test$GarageArea==0,NA,test$GarageArea)
-test$GarageCars<- ifelse(test$GarageCars==0,NA,test$GarageCars)
-test$MasVnrArea<-ifelse(test$MasVnrArea==0,NA,test$MasVnrArea)
-test$GarageYrBlt<-ifelse(test$GarageYrBlt==0,NA,test$GarageYrBlt)
-```
-
 We will fix the missing values in the test data, changing for the mode in categorical variables and for the median in numerical ones.
 
 ```{r}
 train$Electrical <- ifelse(is.na(train$Electrical),"SBrkr",train$Electrical) 
-
 test$SaleType <- ifelse(is.na(test$SaleType),"WD",test$SaleType)
 test$KitchenQual <- ifelse(is.na(test$KitchenQual),"TA",test$KitchenQual)
 test$Exterior2nd <- ifelse(is.na(test$Exterior2nd),"VinylSd",test$Exterior2nd)
@@ -208,29 +203,6 @@ sum(is.na(test$LotFrontage))
 ```
 
 Additionally we see that YearRemodAdd, has construction date if no remodeling or additions have been made. For us that makes no sense, we will create a dummy variable if the house have been remodel and include NA´s when no remodel has been made, so as not to affect the mean, minimum and maximum.
-
-```{r}
-train$YearRemodAdd <- ifelse(train$YearRemodAdd==train$YearBuilt,NA,train$YearRemodAdd)
-test$YearRemodAdd <- ifelse(test$YearRemodAdd==test$YearBuilt,NA,test$YearRemodAdd)
-```
-
-```{r}
-#Me sale NA asumo que ya esta bien
-sum(train$YearRemodAdd==train$YearBuilt)
-sum(test$YearRemodAdd==test$YearBuilt)
-```
-
-```{r}
-train$dummy_garage <- ifelse(is.na(train$GarageYrBlt),0,1)
-train$dummy_masvnr <- ifelse(is.na(train$MasVnrArea),0,1)
-train$dummy_RemodYear <- ifelse(is.na(train$YearRemodAdd),0,1)
-
-test$dummy_garage <- ifelse(is.na(test$GarageYrBlt),0,1)
-test$dummy_masvnr <- ifelse(is.na(test$MasVnrArea),0,1)
-test$dummy_RemodYear <- ifelse(is.na(test$YearRemodAdd),0,1)
-#Keep dummies as numeric
-class(test$dummy_RemodYear)
-```
 
 Other important action in data preprocessing is to check if there are duplicated categories referring to the same thing. That was done manually and it seems that no duplicated categories exist.
 
@@ -295,7 +267,7 @@ obtener_diferencia_categorias <- function(dataframe1, dataframe2) {
 # Ejemplo de uso
 # Supongamos que tienes dos dataframes: 'dataframe_1' y 'dataframe_2'
 # Llama a la función y pasa los dataframes como argumentos
-categorias_diferentes <- obtener_diferencia_categorias(train[,33:70], test[,32:69])
+categorias_diferentes <- obtener_diferencia_categorias(train[,32:68], test[,31:67])
 
 # Muestra los nombres de las categorías únicas presentes en dataframe_1 pero no en dataframe_2
 print("Nombres de categorías presentes en dataframe_1 pero no en dataframe_2:")
@@ -331,7 +303,7 @@ train$Heating <- droplevels(train$Heating, exclude =  "Floor")
 train$Heating <- replace(train$Heating, train$Heating == "OthW", "GasA")
 train$Heating <- droplevels(train$Heating, exclude =  "OthW")
 # Electrical
-train$Electrical <- replace(train$Electrical, train$Electrical == "Mix", "SBrKr")
+train$Electrical <- replace(train$Electrical, train$Electrical == "Mix", "SBrkr")
 train$Electrical <- droplevels(train$Electrical, exclude =  "Mix")
 # MSSubClass
 test$MSSubClass <- replace(test$MSSubClass, test$MSSubClass == '150', '20')
@@ -367,106 +339,7 @@ In the first part, we will carry out a descriptive analysis of several variables
 
 It would be useful to analyse the categorical variables, seeing most popular categories for each variables.
 
-**HACER BOXPLOTS DE LAS QUE VAYAMOS A EXPLICAR**
 
-```{r}
-par(mfrow = c(3, 4))
-colours <- c("red", "blue", "green",
-             "orange", "purple", "pink",
-             "brown", "gray", "cyan", "magenta", "darkgreen", "lightblue")
-
-#1 is sale price
-for (i in 2:13) {
-  col_name <- colnames(num_train_dataset)[i]
-  boxplot(num_train_dataset[, i], 
-       main = col_name,
-       xlab = "Values", 
-       col = colours[i - 1], 
-       breaks = 5)
-}
-```
-
-```{r}
-par(mfrow = c(3, 4))
-colours <- c("red", "blue", "green",
-             "orange", "purple", "pink",
-             "brown", "gray", "cyan", "magenta", "darkgreen","lightblue")
-
-for (i in 14:25) {
-  col_name <- colnames(num_train_dataset)[i]
-  boxplot(num_train_dataset[, i], 
-       main = col_name,
-       xlab = "Values", 
-       col = colours[i - 13],
-       breaks = 5)
-}
-```
-
-```{r}
-par(mfrow = c(3, 3))
-colours <- c("red", "blue", "green",
-             "orange", "purple", "pink",
-             "brown", "gray", "cyan")
-
-for (i in 26:31) {
-  col_name <- colnames(num_train_dataset)[i]
-  boxplot(num_train_dataset[, i], 
-       main = col_name,
-       xlab = "Values", 
-       col = colours[i - 25],
-       breaks = 5)
-}
-```
-
-Same for test:
-
-```{r}
-par(mfrow = c(3, 4))
-colours <- c("red", "blue", "green",
-             "orange", "purple", "pink",
-             "brown", "gray", "cyan", "magenta", "darkgreen", "lightblue")
-
-for (i in 1:12) {
-  col_name <- colnames(num_test_dataset)[i]
-  hist(num_test_dataset[, i], 
-       main = col_name,
-       xlab = "Values", 
-       col = colours[i - 1], 
-       breaks = 5)
-}
-```
-
-```{r}
-par(mfrow = c(3, 4))
-colours <- c("red", "blue", "green",
-             "orange", "purple", "pink",
-             "brown", "gray", "cyan", "magenta", "darkgreen","lightblue")
-
-for (i in 13:24) {
-  col_name <- colnames(num_test_dataset)[i]
-  hist(num_test_dataset[, i], 
-       main = col_name,
-       xlab = "Values", 
-       col = colours[i - 12],
-       breaks = 5)
-}
-```
-
-```{r}
-par(mfrow = c(3, 4))
-colours <- c("red", "blue", "green",
-             "orange", "purple", "pink",
-             "brown", "gray", "cyan")
-
-for (i in 25:30) {
-  col_name <- colnames(num_test_dataset)[i]
-  hist(num_test_dataset[, i], 
-       main = col_name,
-       xlab = "Values", 
-       col = colours[i - 24],
-       breaks = 5)
-}
-```
 
 ## GGPairs
 
@@ -486,14 +359,25 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
   theme_light(base_size=8)
 ```
 
+```{r, warning=FALSE, message=FALSE}
+ggpairs(train[,c(1,25:31)],aes(fill="pink"),
+        lower = list(continuous = "points"),
+        title = "Scatter Plot Matrix") +
+  theme_light(base_size=8)
+```
+
 **Negative skeweness**:
+
 -   YearBuilt, YearRemodAdd, GarageYrBlt.
+
 -   For this variables we could apply a ^2 transformation. However after trying this, we observed that there is no any improvement.
 
 **Positive skeweness**:
+
 -   The rest of the variables have positive skewness, so the proper transformation will be a log transformation. After trying to transform these variables, there is no improvement in some of them, so they will remain as the original ones. It is worth to mention that we have done log(X+1) so as to avoid errors with zero values. We have applied it to: BsmtFinSF1, BsmtFinSF2, BsmtUnfSF, GarageArea, WoodDeckSF and OpenPorchSF.
 
 **Others**
+
 -   YrSold;-> This variable has seasonality, there are some years where more sales occur. This makes sense as could depend on the economic cycles. *Buscar tranformación*.
 
 ```{r warning=FALSE, message=FALSE,echo=FALSE}
@@ -503,7 +387,6 @@ skewness <- round(skew(train[,1:21]), 1)
 result_df <- data.frame(variable = colnames(train[,1:21]), skewness = skewness)
 pander(result_df)
 ```
-
 
 ```{r}
 # Check if the quantitative feature has a cero or not. This will influence our choice for the traanformation
@@ -519,11 +402,15 @@ for (i in head(names(train), 21)) {
 ```{r apply_transformations}
 # Positive skewness
 # 1/x because there are severe skewness
-train[,c(3,11)] <- 1/train[,c(3,11)]
+#train[,c(3,11)] <- 1/train[,c(3,11)]
+# sqrt negative
+train[,c(14)] <- sqrt(max(train[,c(14)])+1-train[,c(14)])
+# sqrt positive
+train[,c(9)] <- sqrt(train[,c(9)])
 # log
-train[,c(2)] <- log(train[,c(2)])
-#log+1 because there are 0 values on that feature
-train[,c(7,8,9,15,16,17)] <- log(train[,c(7,8,9,15,16,17)]+1)
+train[,c(2,11,13,14)] <- log(train[,c(2,11,13,14)])
+# log+1 because there are 0 values on that feature
+train[,c(3,6,7,10,12,16,17,22,24,25,27,29)] <- log(train[,c(3,6,7,10,12,16,17,22,24,25,27,29)]+1)
 ```
 
 In order to check if we archive the normality distributions on the variables thanks to the transformations apply, we plot again the scatters plots.
@@ -542,47 +429,71 @@ ggpairs(train[,c(1,13:24)],aes(fill="pink"),
   theme_light(base_size=8)
 ```
 
+```{r, warning=FALSE, message=FALSE}
+ggpairs(train[,c(1,25:31)],aes(fill="pink"),
+        lower = list(continuous = "points"),
+        title = "Scatter Plot Matrix") +
+  theme_light(base_size=8)
+```
+
+
+**NO LAS INCLUIMOS EN EL MODELO, TIENEN MUCHOS 0, NOS HEMOS DADO CUENTA AHORA.**
+
+```{r}
+train<-train[,-c(8,18,19,20,23)]
+```
+
+- BsmtFinSF2
+
+- EnclosedPorch
+
+- X3SsnPorch
+
+- ScreenPorch
+
+- BsmtHalfBath
+
+
 ## Correlation
+
 To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
 
 ```{r, fig.height=7,fig.width=7}
-correlation_matrix <- cor(num_train_dataset,use='pairwise.complete.obs')
+correlation_matrix <- cor(train[1:26],use='pairwise.complete.obs')
 rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
 corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7, type="upper")
 ```
 
-The only variable that are negatively correlated with house price are EnclosedPorch and KitchenAbvGr, but as the correlation of both is quite small we will not worry to much. 
-The variables that are highly correlated are:
--YearBuild:
--YearRemodAdd:
--TotalBsmtSF:
--X1stFloorSF:
--GrLivArea:
--GarageArea:
--FullBath:
--GarageCars:
+There is correlation between:
 
-(Fireplaces, GarageYrBuild)
+- GarageCars - GarageArea
 
-Nonetheless, correlation has other important use, help to find multicollinearity among variables.
+- GarageCars - GarageYrBlt
 
-
-How to deal with multicolinearity?: (*Slides T2 o T4- QQPlot*)
--Ignore it
--Use antoher estimator other than Least Square
--Get rid of these redundant variables using variable selection techniques.
-
-## ANOVA:
-
+- TotRmsAbvGrd - GrLivArea
 
 # Model:
+
+Cambiamos el orden de los factores, a que el base sea "None".
 
 ```{r}
 train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4,5,2,6,3,1)])
 ```
 
+Separamos en TRAIN_TRAIN (70%) Y TRAIN_VALIDATION (30%)
+
 ```{r}
-model1 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ KitchenAbvGr + TotRmsAbvGrd+ Fireplaces + MoSold + MSSubClass+ MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType + HouseStyle + OverallQual + OverallCond + Exterior2nd + RoofStyle + Exterior1st + ExterQual + ExterCond + Foundation + BsmtQual + BsmtExposure + BsmtFinType1 + BsmtFinType2 + HeatingQC + Electrical + KitchenQual+ Functional+ FireplaceQu+Heating+BsmtCond+LandSlope+CentralAir+Condition1+RoofMatl,data=train)
+set.seed(33)
+samplesize <- round(0.7 * nrow(train), 0)
+index <- sample(seq_len(nrow(train)), size = samplesize)
+
+train_train <- train[index, ]
+train_validation  <- train[-index, ]
+```
+
+
+```{r}
+model1 <- lm(SalePrice~.,data=train_train)
 ```
 
 If we were to try to reduce the number of variables using vif, we realize that it returns an error as some variables have a correlation of 1 between them. However, this does not have to do between numeric variables, as we can calculate the correlation values between them and see that none of them is zero:
@@ -592,24 +503,24 @@ ggcorr(num_train_dataset, label = TRUE, label_size = 2.9, hjust = 1, digits =3,l
 
 Therefore, the problem is with categorical variables. For getting the values that are causing problems we use the alias function.
 
-{r}
+````{r}
 alias(model1)
-
+```
 
 We check those variables where the correlation between them has either 1 or -1. First we see, correlation for KitchenAbvGr and: MsSubClass and BldgType, so we delete KitchenAbvGr. Computing again the alias we see correlation for MsSubClass and HouseStyle and delete the latter. 
 Our criteria for choosing the variable to delete is based on the description and the variable and the intuition on which one affect more to the sale price. Another important criterion is try to delete those variables that has ones with many variables. 
-With the alias function we delete KitchenAbvGr, HouseStyle, MsSubClass, Electrical, CentralAir, BsmtQual, FireplaceQu, Foundation, Heating, Exterior2, RoofStyle, BsmtExposure and Functional, forming model2.
+With the alias function we delete GarageCond, BldgType, Exterior2nd, BsmtQual, BsmtExposure, BsmtFinType1 and GarageType.
 
 ```{r}
-model2 <- lm(SalePrice~LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + dummy_masvnr:MasVnrArea+dummy_masvnr:MasVnrType+ BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + GrLivArea +dummy_garage:GarageCars+dummy_garage:GarageYrBlt+dummy_garage:GarageArea+dummy_garage:GarageType+dummy_garage:GarageFinish+dummy_garage:GarageCond+ WoodDeckSF + OpenPorchSF + EnclosedPorch + X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + FullBath+ HalfBath + BedroomAbvGr+ TotRmsAbvGrd+ Fireplaces + MoSold + MSZoning + LotShape + LandContour + LotConfig + Neighborhood + BldgType  + OverallQual + OverallCond + Exterior1st + ExterQual + ExterCond  + BsmtFinType2 + HeatingQC  + KitchenQual+ BsmtCond+LandSlope+Condition1+RoofMatl,data=train)
+model2 <- lm(SalePrice~.-GarageCond -BldgType -Exterior2nd -BsmtQual -BsmtExposure -BsmtFinType1 -GarageType,data=train_train)
 alias(model2)
 ```
 
 The following step is to use step AIC.
 
 ```{r}
-modelo2aic <- stepAIC(model2,direction="both", trace=FALSE)
-summary(modelo2aic)
+model2aic <- stepAIC(model2,direction="both", trace=FALSE)
+summary(model2aic)
 ```
 
 ## Multicoliniarity 
@@ -617,25 +528,73 @@ summary(modelo2aic)
 **Checking the VIF**
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-vif(modelo2aic)
+vif(model2aic)
 ```
-We delete GrLivArea . GVIF^(1/(2*Df))=4.792750 . We have to compare with $\sqrt{10}\approx$ 3.2
+
+We delete `TotalBsmtSF` . GVIF^(1/(2*Df))=8.489150 . We have to compare with $\sqrt{10}\approx$ 3.2
 
 ```{r}
-modelovif1<- lm(formula = SalePrice ~ LotArea + TotalBsmtSF + X2ndFlrSF +
-                  OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
-    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
-    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
-    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
-    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
-    dummy_garage:GarageCond, data = train)
-vif(modelovif1)
+modelvif1<- lm(formula = SalePrice ~ LotArea + YearBuilt + YearRemodAdd + 
+    BsmtFinSF1 + BsmtUnfSF + X2ndFlrSF + GrLivArea + 
+    GarageYrBlt + GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
+    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+    MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
+    Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
+    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
+    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+vif(modelvif1)
 ```
-We decide to keep LotArea even though the GVIF^(1/(2*Df))=3.353705. We have to compare with $\sqrt{10}\approx$ 3.2
+
+We remove `X2ndFlrSF` the GVIF^(1/(2*Df))=4.533315. We have to compare with $\sqrt{10}\approx$ 3.2
 
 ```{r}
-summary(modelovif1)
+modelvif2<- lm(formula = SalePrice ~ LotArea + YearBuilt + YearRemodAdd + 
+    BsmtFinSF1 + BsmtUnfSF + GrLivArea + 
+    GarageYrBlt + GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
+    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+    MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
+    Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
+    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
+    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+vif(modelvif2)
 ```
+
+
+We remove `YearBuilt` the GVIF^(1/(2*Df))=4.076025. We have to compare with $\sqrt{10}\approx$ 3.2
+
+```{r}
+modelvif3<- lm(formula = SalePrice ~ LotArea + YearRemodAdd + 
+    BsmtFinSF1 + BsmtUnfSF + GrLivArea + 
+    GarageYrBlt + GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
+    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+    MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
+    Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
+    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
+    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+vif(modelvif3)
+```
+
+We remove `GarageYrBlt` the GVIF^(1/(2*Df))=3.937849. We have to compare with $\sqrt{10}\approx$ 3.2
+
+```{r}
+modelvif4<- lm(formula = SalePrice ~ LotArea + YearRemodAdd + 
+    BsmtFinSF1 + BsmtUnfSF + GrLivArea + 
+    GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
+    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+    MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
+    Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
+    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
+    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+vif(modelvif4)
+```
+
+Ya no hay multicolinealidad.
+
+```{r}
+summary(modelvif4)
+```
+
+
 ## Interaction between categorical and numeric variables
 
 The following code, give us the p-value between 2 models. It also creates a file to storage the final results, because this is a process that is a little bit time-consuming. After it will help us to check and compare the p-values for significant iterations.
@@ -646,13 +605,14 @@ Usually, we mark as a significant interaction when p<0.05. However, because we h
 
 ```{r}
 dependent_variable <- "SalePrice"
-name_vars <- c('LotArea' , 'TotalBsmtSF' , 'X2ndFlrSF' , 
-    'OpenPorchSF' , 'EnclosedPorch' , 'ScreenPorch' , 'BsmtFullBath' , 
-    'BsmtHalfBath' , 'HalfBath' , 'BedroomAbvGr' , 'LandContour' , 'Neighborhood' , 
-    'BldgType' , 'OverallQual' , 'OverallCond' , 'Exterior1st' , 'ExterCond' , 
-    'HeatingQC' , 'Condition1' , 'RoofMatl' , 'dummy_RemodYear:YearRemodAdd' , 
-    'dummy_masvnr:MasVnrArea' , 'dummy_masvnr:MasVnrType' , 'dummy_garage:GarageArea' , 
-    'dummy_garage:GarageCond')
+name_vars <- c('LotArea' , 'YearRemodAdd' , 'BsmtFinSF1' , 
+    'BsmtUnfSF' , 'GrLivArea' , 'GarageArea' , 'WoodDeckSF' , 'YrSold' , 
+    'BsmtFullBath' , 'FullBath' , 'HalfBath' , 'BedroomAbvGr' , 'Fireplaces' , 
+    'GarageCars' , 'MoSold' , 'MSSubClass' , 'MSZoning' , 'LotConfig' , 
+    'LandSlope' , 'Neighborhood' , 'Condition1' , 'HouseStyle' , 'OverallQual' , 
+    'OverallCond' , 'RoofMatl' , 'Exterior1st' , 'Foundation' , 'BsmtCond' , 
+    'Heating' , 'CentralAir' , 'KitchenQual' , 'Functional' , 'GarageFinish' , 
+    'SaleCondition')
 interaction_matrix <- matrix(0, ncol =  length(name_vars), nrow =  length(name_vars), dimnames = list(name_vars,name_vars))
 
 # Loop through all pairs of variables
@@ -662,20 +622,22 @@ for (i in 1:(length(name_vars))) {
     variable2 <- name_vars[j]
     if (variable1 != dependent_variable && variable2 != dependent_variable && variable1 != variable2) {
       # Run both models
-      lmod_all_vars <- lm(as.formula(paste(dependent_variable, "~ LotArea + TotalBsmtSF + X2ndFlrSF + 
-    OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
-    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
-    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
-    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
-    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
-    dummy_garage:GarageCond +", variable1, ":", variable2)), data = train)
-      lmod_without_inter <- lm(as.formula(paste(dependent_variable, "~ LotArea + TotalBsmtSF + X2ndFlrSF + 
-    OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
-    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
-    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
-    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
-    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
-    dummy_garage:GarageCond -", variable1, ":", variable2)), data = train)
+      lmod_all_vars <- lm(as.formula(paste(dependent_variable, "~ LotArea + YearRemodAdd + BsmtFinSF1 + 
+    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
+    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
+    GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
+    LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
+    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
+    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
+    SaleCondition +", variable1, ":", variable2)), data = train_train)
+      lmod_without_inter <- lm(as.formula(paste(dependent_variable, "~ LotArea + YearRemodAdd + BsmtFinSF1 + 
+    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
+    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
+    GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
+    LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
+    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
+    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
+    SaleCondition -", variable1, ":", variable2)), data = train_train)
     
       anova_result <- anova(lmod_all_vars, lmod_without_inter)
       interaction_matrix[variable1, variable2] <- anova_result[2, "Pr(>F)"]
@@ -694,7 +656,7 @@ The next code, allow to get the interactions with test value lower than 0.05:
 ```{r}
 anova_05 <- read.csv("anova_matrix_05.csv", sep=",")
 # Extract row and column names where values are lower than 0.05
-significant_interactions <- which(anova_05 < 0.05 & anova_05>0, arr.ind = TRUE)
+significant_interactions <- which(anova_05 < 0.001 & anova_05>0, arr.ind = TRUE)
 
 # Print the significant interactions
 for (i in 1:nrow(significant_interactions)) {
@@ -704,41 +666,45 @@ for (i in 1:nrow(significant_interactions)) {
 }
 ```
 
-+TotalBsmtSF : Neighborhood +HalfBath : Neighborhood +EnclosedPorch : OverallCond +
++YearRemodAdd : GrLivArea +LotArea : Neighborhood  
+
 
 ```{r}
-modelovif1_interactions <- lm(formula= SalePrice~ LotArea + TotalBsmtSF + X2ndFlrSF + 
-    OpenPorchSF + EnclosedPorch + ScreenPorch + BsmtFullBath + 
-    BsmtHalfBath + HalfBath + BedroomAbvGr + LandContour + Neighborhood + 
-    BldgType + OverallQual + OverallCond + Exterior1st + ExterCond + 
-    HeatingQC + Condition1 + RoofMatl + dummy_RemodYear:YearRemodAdd + 
-    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + dummy_garage:GarageArea + 
-    dummy_garage:GarageCond +TotalBsmtSF : Neighborhood +HalfBath : Neighborhood +EnclosedPorch : OverallCond, data = train)
+model_interactions <- lm(formula= SalePrice~ LotArea + YearRemodAdd + BsmtFinSF1 + 
+    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
+    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
+    GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
+    LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
+    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
+    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
+    SaleCondition +YearRemodAdd : GrLivArea +LotArea : Neighborhood , data = train_train)
 
-summary(modelovif1_interactions)
-modelovif1_interactions_stepAIC <- stepAIC(modelovif1_interactions, direction = 'both', trace=FALSE)
-summary(modelovif1_interactions_stepAIC)
-```
-```{r}
-anova(modelovif1, modelovif1_interactions)
-```
-Its better the model with the interactions
-
-## MULTICOLINEARITY AGAIN
-
-```{r}
-alias(modelovif1_interactions)
+summary(model_interactions)
 ```
 
+## Compare reduce model with full one using ANOVA
+
 ```{r}
-vif(modelovif1)
+anova(modelvif4, model_interactions)
+```
+
+Its better the model with the interactions.
+
+## (MULTICOLINEARITY AGAIN)
+
+```{r}
+alias(model_interactions)
+```
+
+```{r}
+vif(model_interactions)
 ```
 
 
 ## Linearity
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-resact <- data.frame(residual = modelovif1$residuals, fitted = modelovif1$fitted.values)
+resact <- data.frame(residual = model_interactions$residuals, fitted = model_interactions$fitted.values)
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = 0)) + 
     theme(panel.grid = element_blank(), panel.background = element_blank())
 ```
@@ -750,22 +716,16 @@ Shapiro test
 H0 = normality
 
 ```{r}
-shapiro.test(modelovif1$residuals)
-qqnorm(residuals(modelovif1))
-qqline(residuals(modelovif1))
+shapiro.test(model_interactions$residuals)
+qqnorm(residuals(model_interactions))
+qqline(residuals(model_interactions))
 ```
+
 So data do not follow a normal distribution
 
-## Compare reduce model with full one using ANOVA
 
 ```{r}
-anova(model2,modelovif1, test="Chisq")
-```
-The model 1 is better (less variable)
-
-
-```{r}
-confint(modelovif1,level=0.95)
+confint(model_interactions,level=0.95)
 ```
 
 If 0 is not in the interval is significative
@@ -776,36 +736,42 @@ If 0 is not in the interval is significative
 
 ```{r}
 par(mfrow=c(2,2))
-plot(modelovif1)
+plot(model_interactions)
 ```
 
-The outliers are:  1325, 474, 899. We are going to remove them.
-The influencial observations are: 524, 629, 1152 (we only delete 524 because is out of Cook's distance)
+```{r}
+# Crear el gráfico de cuantiles normales de los residuos
+residual_qqnorm <- qqnorm(model_interactions$residuals)
+
+# Obtener los índices de los valores atípicos
+outliers_indices <- which(abs(model_interactions$residuals) > 4 * sd(model_interactions$residuals))
+
+# Acceder a los valores atípicos
+outliers <- model_interactions$residuals[outliers_indices]
+```
 
 ```{r}
-modelovif1_outliers<- lm(formula = SalePrice ~ LotFrontage + LotArea + YearBuilt + dummy_RemodYear:YearRemodAdd + 
-    dummy_masvnr:MasVnrArea + dummy_masvnr:MasVnrType + BsmtFinSF1 + 
-    BsmtFinSF2 + BsmtUnfSF + TotalBsmtSF + X1stFlrSF + X2ndFlrSF + 
-    GrLivArea + dummy_garage:GarageCars + dummy_garage:GarageYrBlt + 
-    dummy_garage:GarageArea + dummy_garage:GarageType + dummy_garage:GarageFinish + 
-    dummy_garage:GarageCond + WoodDeckSF + OpenPorchSF + EnclosedPorch + 
-    X3SsnPorch + ScreenPorch + YrSold + BsmtFullBath + BsmtHalfBath + 
-    FullBath + HalfBath + BedroomAbvGr + TotRmsAbvGrd + Fireplaces + 
-    MoSold + MSZoning + LotShape + LandContour + LotConfig + 
-    Neighborhood + BldgType + OverallQual + OverallCond + Exterior1st + 
-    ExterQual + ExterCond + BsmtFinType2 + HeatingQC + KitchenQual + 
-    BsmtCond + LandSlope + Condition1 + RoofMatl, data = train[-c(474,524,1429,219,899,1325,540,499,561,349,1110,560),])
-summary(modelovif1_outliers)
+model_outliers<- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
+    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
+    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
+    GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
+    LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
+    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
+    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
+    SaleCondition + YearRemodAdd:GrLivArea + LotArea:Neighborhood, data = train_train[-outliers_indices,])
+summary(model_outliers)
 ```
 
 The model R^2 improves and the residual standard error decrease from 0.10 to 0.08
 
 ```{r}
 par(mfrow=c(2,2))
-plot(modelovif1_outliers)
+plot(model_outliers)
 ```
+
+
 ```{r}
-shapiro.test(modelovif1_outliers$residuals)
+shapiro.test(model_outliers$residuals)
 ```
 
 As we can not see a signicative improvement in the model, we remain these outliers in the model. We continue with `modelovif1_outliers`
@@ -814,12 +780,12 @@ As we can not see a signicative improvement in the model, we remain these outlie
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_hline(aes(yintercept = 0))
-
 ```
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-bptest(modelovif1_outliers)
+bptest(model_outliers)
 ```
+
 # Model tunning
 
 Since the assumptions are not satisfied we need to explore possible transformations of the response variable:
@@ -829,17 +795,12 @@ Since the assumptions are not satisfied we need to explore possible transformati
 modelovif1_outliers.boxcox=a=boxcox(modelovif1_outliers,lambda = seq(-10, 2, length.out = 10))
 modelovif1_outliers.boxcox$x[which.max(modelovif1_outliers.boxcox$y)]
 ```
+
 # Model Performance
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-
-
 # RMSE of train dataset
-RMSE(modelovif1_outliers$fitted.values, train$SalePrice)
-
-# RMSE in the test dataset
-modelovif1_outliers_pred <- predict(modelovif1_outliers, newdata = test)
-RMSE(modelovif1_outliers_pred,modelovif1_outliers$fitted.values)
+RMSE(model_outliers$fitted.values, train_validation$SalePrice)
 ```
 
 
@@ -849,8 +810,7 @@ The accuracy of the model in predicting the car price is measured with RMSE, wit
 If we compare with a the model without one of the variables (for example stroke):
 
 
-{r, cache=FALSE, message=FALSE,warning=FALSE}
-
+````{r, cache=FALSE, message=FALSE,warning=FALSE}
 
 mod0.data4=update(mod3,.~.-stroke )
 
@@ -862,5 +822,4 @@ RMSE(pred = (mod0.data4$fitted.values*0.06+1)^(1/0.06), obs = (data_train4$price
 mod.data4_pred <- predict(mod0.data4, newdata = data_test4)
 RMSE(pred = (mod.data4_pred*0.06+1)^(1/0.06), obs = (data_test4$price*0.06+1)^(1/0.06))
 
-
-
+```
