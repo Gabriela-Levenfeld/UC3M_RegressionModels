@@ -257,10 +257,10 @@ obtener_diferencia_categorias <- function(dataframe1, dataframe2) {
 # Supongamos que tienes dos dataframes: 'dataframe_1' y 'dataframe_2'
 # Llama a la función y pasa los dataframes como argumentos
 categorias_diferentes <- obtener_diferencia_categorias(train[,32:68], test[,31:67])
-
+categorias_diferentes_test <- obtener_diferencia_categorias(test[,31:67],train[,32:68])
 # Muestra los nombres de las categorías únicas presentes en dataframe_1 pero no en dataframe_2
 print("Nombres de categorías presentes en dataframe_1 pero no en dataframe_2:")
-print(categorias_diferentes)
+print(categorias_diferentes_test)
 ```
 
 Once with have the categories that differ, we will replace in the dataset that contains the category that does not occur in the other dataset, the values of those category for the mode of the variable, and delete the category.
@@ -371,13 +371,9 @@ Finally, we wanted to mentioned the seasonality appreciated in the variable Year
 
 ```{r, echo=FALSE}
 ##ARREGLAR ESTE CODIGO:
-ggplot(datos, aes(x = YearSold)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(x = "Año de Venta", y = "Frecuencia", title = "Histograma de Año de Venta")
+#ggplot(train, aes(x = YearSold)) +geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +labs(x = "Año de Venta", y = "Frecuencia", title = "Histograma de Año de Venta")
 
-ggplot(datos, aes(x = YearSold)) +
-  geom_density(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(x = "Año de Venta", y = "Densidad", title = "Gráfica de Densidad de Año de Venta")
+#ggplot(train, aes(x = YearSold)) +geom_density(fill = "skyblue", color = "black", alpha = 0.7) +labs(x = "Año de Venta", y = "Densidad", title = "Gráfica de Densidad de Año de Venta")
 ```
 
 
@@ -542,12 +538,16 @@ for (i in head(names(train), 31)) {
 ```{r apply_transformations,include=FALSE}
 # sqrt negative
 train[,c(14)] <- sqrt(max(train[,c(14)])+1-train[,c(14)])
+test[,c(13)] <- sqrt(max(test[,c(13)])+1-test[,c(13)])
 # sqrt positive
 train[,c(9)] <- sqrt(train[,c(9)])
+test[,c(8)] <- sqrt(test[,c(8)])
 # log
 train[,c(2,11,13,14)] <- log(train[,c(2,11,13,14)])
+test[,c(1,10,12,13)] <- log(test[,c(1,10,12,13)])
 # log+1 because there are 0 values on that feature
 train[,c(3,6,7,10,12,16,17,22,24,25,27,29)] <- log(train[,c(3,6,7,10,12,16,17,22,24,25,27,29)]+1)
+test[,c(2,5,6,9,11,15,16,21,23,24,26,28)] <- log(test[,c(2,5,6,9,11,15,16,21,23,24,26,28)]+1)
 ```
 
 Different transformation have been applied to different variables, they are:
@@ -597,6 +597,7 @@ Exploratory analysis has helped us to realize that other variables have lot of z
 
 ```{r, include=FALSE}
 train<-train[,-c(8,18,19,20,23)]
+test<-test[,-c(7,17,18,19,22)]
 ```
 
 
@@ -607,6 +608,7 @@ Cambiamos el orden de los factores, a que el base sea "None".
 
 ```{r}
 train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4,5,2,6,3,1)])
+test$GarageCond <- factor(test$GarageCond, levels=levels(test$GarageCond)[c(4,5,2,6,3,1)])
 ```
 
 
@@ -621,7 +623,7 @@ train_train <- train[index, ]
 train_validation  <- train[-index, ]
 ```
 
-## Miramos las categorias disferentes entre train_train y train_val
+## Miramos las categorias disferentes entre train_train y train_validation
 
 ```{r}
 categorias_diferentes2 <- obtener_diferencia_categorias(train_train[,27:63], train_validation[,27:63])
@@ -637,59 +639,128 @@ print(categorias_diferentes2)
 train_validation$Functional <- replace(train_validation$Functional, train_validation$Functional == "Sev", "Typ")
 train_train$Functional <- droplevels(train_train$Functional, exclude= "Sev")
 train_validation$Functional <- droplevels(train_validation$Functional, exclude= "Sev")
+train$Functional <- replace(train$Functional, train$Functional == "Sev", "Typ")
+train$Functional <- droplevels(train$Functional, exclude= "Sev")
+test$Functional <- replace(test$Functional, test$Functional == "Sev", "Typ")
+test$Functional <- droplevels(test$Functional, exclude= "Sev")
+
 
 train_validation$ExterCond <- replace(train_validation$ExterCond, train_validation$ExterCond == "Po", "TA")
 train_train$ExterCond <- droplevels(train_train$ExterCond, exclude= "Po")
 train_validation$ExterCond <- droplevels(train_validation$ExterCond, exclude= "Po")
+train$ExterCond <- replace(train$ExterCond, train$ExterCond == "Po", "TA")
+train$ExterCond <- droplevels(train$ExterCond, exclude= "Po")
+test$ExterCond <- replace(test$ExterCond, test$ExterCond == "Po", "TA")
+test$ExterCond <- droplevels(test$ExterCond, exclude= "Po")
+
 
 train_validation$Exterior2nd <- replace(train_validation$Exterior2nd, train_validation$Exterior2nd == "CBlock", "VinylSd")
 train_train$Exterior2nd <- droplevels(train_train$Exterior2nd, exclude= "CBlock")
 train_validation$Exterior2nd <- droplevels(train_validation$Exterior2nd, exclude= "CBlock")
+train$Exterior2nd <- replace(train$Exterior2nd, train$Exterior2nd == "CBlock", "VinylSd")
+train$Exterior2nd <- droplevels(train$Exterior2nd, exclude= "CBlock")
+test$Exterior2nd <- replace(test$Exterior2nd, test$Exterior2nd == "CBlock", "VinylSd")
+test$Exterior2nd <- droplevels(test$Exterior2nd, exclude= "CBlock")
+
 
 train_validation$Exterior1st <- replace(train_validation$Exterior1st, train_validation$Exterior1st == "CBlock", "VinylSd")
 train_train$Exterior1st <- droplevels(train_train$Exterior1st, exclude= "CBlock")
 train_validation$Exterior1st <- droplevels(train_validation$Exterior1st, exclude= "CBlock")
+train$Exterior1st <- replace(train$Exterior1st, train$Exterior1st == "CBlock", "VinylSd")
+train$Exterior1st <- droplevels(train$Exterior1st, exclude= "CBlock")
+test$Exterior1st <- replace(test$Exterior1st, test$Exterior1st == "CBlock", "VinylSd")
+test$Exterior1st <- droplevels(test$Exterior1st, exclude= "CBlock")
+
 
 # Esto es para categorias_diferentes2
 train_train$Neighborhood <- replace(train_train$Neighborhood, train_train$Neighborhood == "Blueste", "NAmes")
 train_validation$Neighborhood <- droplevels(train_validation$Neighborhood, exclude= "Blueste")
 train_train$Neighborhood <- droplevels(train_train$Neighborhood, exclude= "Blueste")
+train$Neighborhood <- replace(train$Neighborhood, train$Neighborhood == "Blueste", "NAmes")
+train$Neighborhood <- droplevels(train$Neighborhood, exclude= "Blueste")
+test$Neighborhood <- replace(test$Neighborhood, test$Neighborhood == "Blueste", "NAmes")
+test$Neighborhood <- droplevels(test$Neighborhood, exclude= "Blueste")
+
 
 train_train$OverallQual <- replace(train_train$OverallQual, train_train$OverallQual == "1", "5")
 train_validation$OverallQual <- droplevels(train_validation$OverallQual, exclude= "1")
 train_train$OverallQual <- droplevels(train_train$OverallQual, exclude= "1")
+train$OverallQual <- replace(train$OverallQual, train$OverallQual == "1", "5")
+train$OverallQual <- droplevels(train$OverallQual, exclude= "1")
+test$OverallQual <- replace(test$OverallQual, test$OverallQual == "1", "5")
+test$OverallQual <- droplevels(test$OverallQual, exclude= "1")
+
 
 train_train$OverallCond <- replace(train_train$OverallCond, train_train$OverallCond == "1", "5")
 train_validation$OverallCond <- droplevels(train_validation$OverallCond, exclude= "1")
 train_train$OverallCond <- droplevels(train_train$OverallCond, exclude= "1")
+train$OverallCond <- replace(train$OverallCond, train$OverallCond == "1", "5")
+train$OverallCond <- droplevels(train$OverallCond, exclude= "1")
+test$OverallCond <- replace(test$OverallCond, test$OverallCond == "1", "5")
+test$OverallCond <- droplevels(test$OverallCond, exclude= "1")
+
 
 train_train$Exterior1st <- replace(train_train$Exterior1st, train_train$Exterior1st == "AsphShn", "VinylSd")
 train_train$Exterior1st <- droplevels(train_train$Exterior1st, exclude= "AsphShn")
 train_validation$Exterior1st <- droplevels(train_validation$Exterior1st, exclude= "AsphShn")
+train$Exterior1st <- replace(train$Exterior1st, train$Exterior1st == "AsphShn", "VinylSd")
+train$Exterior1st <- droplevels(train$Exterior1st, exclude= "AsphShn")
+test$Exterior1st <- replace(test$Exterior1st, test$Exterior1st == "AsphShn", "VinylSd")
+test$Exterior1st <- droplevels(test$Exterior1st, exclude= "AsphShn")
+
 
 train_train$ExterCond <- replace(train_train$ExterCond, train_train$ExterCond == "Ex", "TA")
 train_train$ExterCond <- droplevels(train_train$ExterCond, exclude= "Ex")
 train_validation$ExterCond <- droplevels(train_validation$ExterCond, exclude= "Ex")
+train$ExterCond <- replace(train$ExterCond, train$ExterCond == "Ex", "TA")
+train$ExterCond <- droplevels(train$ExterCond, exclude= "Ex")
+test$ExterCond <- replace(test$ExterCond, test$ExterCond == "Ex", "TA")
+test$ExterCond <- droplevels(test$ExterCond, exclude= "Ex")
+
 
 train_train$Foundation <- replace(train_train$Foundation, train_train$Foundation == "Wood", "PConc")
 train_train$Foundation <- droplevels(train_train$Foundation, exclude= "Wood")
 train_validation$Foundation <- droplevels(train_validation$Foundation, exclude= "Wood")
+train$Foundation <- replace(train$Foundation, train$Foundation == "Wood", "PConc")
+train$Foundation <- droplevels(train$Foundation, exclude= "Wood")
+test$Foundation <- replace(test$Foundation, test$Foundation == "Wood", "PConc")
+test$Foundation <- droplevels(test$Foundation, exclude= "Wood")
+
 
 train_train$BsmtCond <- replace(train_train$BsmtCond, train_train$BsmtCond == "Po", "TA")
 train_train$BsmtCond <- droplevels(train_train$BsmtCond, exclude= "Po")
 train_validation$BsmtCond <- droplevels(train_validation$BsmtCond, exclude= "Po")
+train$BsmtCond <- replace(train$BsmtCond, train$BsmtCond == "Po", "TA")
+train$BsmtCond <- droplevels(train$BsmtCond, exclude= "Po")
+test$BsmtCond <- replace(test$BsmtCond, test$BsmtCond == "Po", "TA")
+test$BsmtCond <- droplevels(test$BsmtCond, exclude= "Po")
+
 
 train_train$HeatingQC <- replace(train_train$HeatingQC, train_train$HeatingQC == "Po", "Ex")
 train_train$HeatingQC <- droplevels(train_train$HeatingQC, exclude= "Po")
 train_validation$HeatingQC <- droplevels(train_validation$HeatingQC, exclude= "Po")
+train$HeatingQC <- replace(train$HeatingQC, train$HeatingQC == "Po", "Ex")
+train$HeatingQC <- droplevels(train$HeatingQC, exclude= "Po")
+test$HeatingQC <- replace(test$HeatingQC, test$HeatingQC == "Po", "Ex")
+test$HeatingQC <- droplevels(test$HeatingQC, exclude= "Po")
+
 
 train_train$SaleType <- replace(train_train$SaleType, train_train$SaleType == "Con", "WD")
 train_train$SaleType <- droplevels(train_train$SaleType, exclude= "Con")
 train_validation$SaleType <- droplevels(train_validation$SaleType, exclude= "Con")
+train$SaleType <- replace(train$SaleType, train$SaleType == "Con", "WD")
+train$SaleType <- droplevels(train$SaleType, exclude= "Con")
+test$SaleType <- replace(test$SaleType, test$SaleType == "Con", "WD")
+test$SaleType <- droplevels(test$SaleType, exclude= "Con")
+
 
 train_train$SaleType <- replace(train_train$SaleType, train_train$SaleType == "Oth", "WD")
 train_train$SaleType <- droplevels(train_train$SaleType, exclude= "Oth")
 train_validation$SaleType <- droplevels(train_validation$SaleType, exclude= "Oth")
+train$SaleType <- replace(train$SaleType, train$SaleType == "Oth", "WD")
+train$SaleType <- droplevels(train$SaleType, exclude= "Oth")
+test$SaleType <- replace(test$SaleType, test$SaleType == "Oth", "WD")
+test$SaleType <- droplevels(test$SaleType, exclude= "Oth")
 ```
 
 
@@ -789,7 +860,6 @@ vif(modelvif3)
 We remove `GarageYrBlt` the GVIF^(1/(2*Df))=3.937849. We have to compare with $\sqrt{10}\approx$ 3.2
 
 ```{r}
-
 modelvif4 <- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
                  BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF +
                  BsmtFullBath + FullBath + 
@@ -808,6 +878,7 @@ Ya no hay multicolinealidad.
 ```{r}
 summary(modelvif4)
 ```
+
 Once the multicolinearity is managed, we check the RMSE again.
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
@@ -886,6 +957,7 @@ for (i in 1:nrow(significant_interactions)) {
   cat(anova_05[row_index,1], ":", col_index, "+")
 }
 ```
+
 *Explicar mejor porque nos quedamos con estas dos* 
 
 +YearRemodAdd : GrLivArea +LotArea : Neighborhood  
@@ -903,6 +975,7 @@ model_interactions <- lm(formula= SalePrice~ LotArea + YearRemodAdd + BsmtFinSF1
 
 summary(model_interactions)
 ```
+
 ```{r}
 RMSE(model_interactions$fitted.values, train_train$SalePrice)
 ```
@@ -944,6 +1017,7 @@ model_interactionsvif <- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtF
     data = train_train)
 vif(model_interactionsvif)
 ```
+
 Al hacer el vif tenemos que quitar: LotArea
 
 ```{r}
@@ -1031,16 +1105,6 @@ par(mfrow=c(2,2))
 plot(model_outliers)
 ```
 
-```{r}
-# Crear el gráfico de cuantiles normales de los residuos
-residual_qqnorm <- qqnorm(model_outliers$residuals)
-
-# Obtener los índices de los valores atípicos
-outliers_indices <- which(abs(model_outliers$residuals) > 3 * sd(model_outliers$residuals))
-
-# Acceder a los valores atípicos
-outliers <- model_outliers$residuals[outliers_indices]
-```
 
 The model R^2 improves and the residual standard error decrease from 0.10 to 0.08
 
@@ -1048,17 +1112,10 @@ SOmos incapaces de mejorar, probamos a sacar varaibles no significativas con muc
 
 
 ```{r}
-par(mfrow=c(2,2))
-plot(model_outliers)
-```
-
-
-
-```{r}
 shapiro.test(model_outliers$residuals)
 ```
 
-As we can not see a signicative improvement in the model, we remain these outliers in the model. We continue with `modelovif1_outliers`
+As we can not see a signicative improvement in the model, we remain these outliers in the model. We continue with `model_outliers`
 
 ## Hetereosdacity
 
@@ -1069,17 +1126,6 @@ resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_h
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 bptest(model_outliers)
 ```
-```{r}
-RMSE(model_outliers$fitted.values, train_train[-outliers_indices,]$SalePrice)
-RMSE(predict(model_outliers, newdata=train_validation), train_validation$SalePrice)
-```
-
-
-```{r}
-plot(model_new)
-```
-
-
 
 # Model tunning
 
@@ -1090,20 +1136,28 @@ Since the assumptions are not satisfied we need to explore possible transformati
 model_outliers.boxcox=boxcox(model_outliers,lambda = seq(-10, 2, length.out = 10))
 model_outliers.boxcox$x[which.max(model_outliers.boxcox$y)]
 ```
-```{r}
-train_train$SalePrice=
-train_validation$SalePrice=
-```
 
 
 # Model Performance
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-# RMSE of train dataset
-RMSE(model_outliers$fitted.values, train_validation$SalePrice)
+# RMSE of train_train
+RMSE(model_outliers$fitted.values, train_train[-c(81,260,551),]$SalePrice)
+# RMSE of train_validation
+RMSE(predict(model_outliers, newdata=train_validation), train_validation$SalePrice)
 ```
 
 
+```{r}
+predicciones_train=predict(model_outliers, newdata=train)
+RMSE(predicciones_train, train$SalePrice)
+predicciones_test=exp(predict(model_outliers, newdata=test))
+```
 
+Exportamos a un csv las `predicciones_test`.
+
+```{r}
+write.csv(data.frame(Id=test_original$Id, SalePrice = predicciones_test), file = "predicciones_test.csv", row.names = FALSE)
+```
 
 
