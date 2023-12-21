@@ -493,7 +493,6 @@ train_train <- train[index, ]
 train_validation  <- train[-index, ]
 ```
 
-Lets correct for the categories that dont appear in train validation for Exterior1st
 
 ```{r}
 model1 <- lm(SalePrice~.,data=train_train)
@@ -680,6 +679,7 @@ for (i in 1:nrow(significant_interactions)) {
   cat(anova_05[row_index,1], ":", col_index, "+")
 }
 ```
+*Explicar mejor porque nos quedamos con estas dos* 
 
 +YearRemodAdd : GrLivArea +LotArea : Neighborhood  
 
@@ -715,10 +715,30 @@ Its better the model with the interactions.
 alias(model_interactions)
 ```
 
+```{r}
+model_interactions_stepAIC <- stepAIC(model_interactions,direction="both", trace=FALSE)
+summary(model_interactions_stepAIC)
+```
+```{r}
+vif(model_interactions_stepAIC)
+```
+```{r}
+model_interactionsvif <- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
+    GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + Fireplaces + GarageCars + MSSubClass + 
+    MSZoning + LotConfig  + Condition1 + HouseStyle + 
+    OverallQual + OverallCond + RoofMatl + Exterior1st + Foundation + 
+    BsmtCond + Heating + CentralAir + KitchenQual + Functional + 
+    SaleCondition + YearRemodAdd:GrLivArea + LotArea:Neighborhood, 
+    data = train_train)
+vif(model_interactionsvif)
+```
+Hemos eliminado GrLivArea, Neighborhood por el vif.
+
 ## Linearity
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-resact <- data.frame(residual = model_interactions$residuals, fitted = model_interactions$fitted.values)
+resact <- data.frame(residual = model_interactionsvif$residuals, fitted = model_interactionsvif$fitted.values)
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = 0)) + 
     theme(panel.grid = element_blank(), panel.background = element_blank())
 ```
@@ -730,19 +750,10 @@ Shapiro test
 H0 = normality
 
 ```{r}
-shapiro.test(model_interactions$residuals)
-qqnorm(residuals(model_interactions))
-qqline(residuals(model_interactions))
+shapiro.test(model_interactionsvif$residuals)
 ```
 
 So data do not follow a normal distribution
-
-
-```{r}
-confint(model_interactions,level=0.95)
-```
-
-If 0 is not in the interval is significative
 
 
 ## Outliers
@@ -750,49 +761,45 @@ If 0 is not in the interval is significative
 
 ```{r}
 par(mfrow=c(2,2))
-plot(model_interactions)
+plot(model_interactionsvif)
 ```
+We want to check for the RMSE in validation dataset. We drop Functional and Exterior1st because of poor categories statistical importance.
+
+```{r}
+model_new=update(model_interactionsvif, .~.- Functional- Exterior1st)
+summary(model_new)
+
+RMSE(model_new$fitted.values, train_train$SalePrice)
+RMSE(predict(model_new, newdata=train_validation), train_validation$SalePrice)
+```
+
+
 
 ```{r}
 # Crear el gráfico de cuantiles normales de los residuos
-residual_qqnorm <- qqnorm(model_interactions$residuals)
+residual_qqnorm <- qqnorm(model_new$residuals)
 
 # Obtener los índices de los valores atípicos
-outliers_indices <- which(abs(model_interactions$residuals) > 3 * sd(model_interactions$residuals))
+outliers_indices <- which(abs(model_new$residuals) > 3 * sd(model_new$residuals))
 
 # Acceder a los valores atípicos
-outliers <- model_interactions$residuals[outliers_indices]
+outliers <- model_new$residuals[outliers_indices]
 ```
 
 ```{r}
 model_outliers<- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
-    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
-    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
-    GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
-    LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
-    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
-    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
-    SaleCondition + YearRemodAdd:GrLivArea + LotArea:Neighborhood, data = train_train[-outliers_indices,])
+    GarageArea + WoodDeckSF + BsmtFullBath + FullBath + HalfBath + 
+    BedroomAbvGr + Fireplaces + GarageCars + MSSubClass + MSZoning + 
+    LotConfig + Condition1 + HouseStyle + OverallQual + OverallCond + 
+    RoofMatl + Foundation + BsmtCond + Heating + CentralAir + 
+    KitchenQual + SaleCondition + YearRemodAdd:GrLivArea + LotArea:Neighborhood, 
+    data = train_train[-outliers_indices,])
 summary(model_outliers)
 ```
 
 The model R^2 improves and the residual standard error decrease from 0.10 to 0.08
 
-
-```{r}
-RMSE(model_outliers$fitted.values, train_train$SalePrice)
-```
 SOmos incapaces de mejorar, probamos a sacar varaibles no significativas con muchas categorias, a ver si mejoramos las assumptions y el rmse.
-
-We want to check for the RMSE in validation dataset. We drop Functional and Exterior1st because of poor categories statistical importance.
-
-```{r}
-model_new=update(model_outliers, .~.- Functional- Exterior1st)
-summary(model_new)
-
-RMSE(model_new$fitted.values, train_train[-outliers_indices,]$SalePrice)
-RMSE(predict(model_new, newdata=train_validation), train_validation$SalePrice)
-```
 
 
 ```{r}
@@ -817,6 +824,17 @@ resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_h
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 bptest(model_outliers)
 ```
+```{r}
+RMSE(model_outliers$fitted.values, train_train[-outliers_indices,]$SalePrice)
+RMSE(predict(model_outliers, newdata=train_validation), train_validation$SalePrice)
+```
+
+
+```{r}
+plot(model_new)
+```
+
+
 
 # Model tunning
 
@@ -841,22 +859,6 @@ RMSE(model_outliers$fitted.values, train_validation$SalePrice)
 ```
 
 
-The accuracy of the model in predicting the car price is measured with RMSE, with training data has RMSE of 1980.464 and testing data has RMSE of 3081.996, suggesting that our model may overfit the training dataset.
 
 
-If we compare with a the model without one of the variables (for example stroke):
 
-
-````{r, cache=FALSE, message=FALSE,warning=FALSE}
-
-mod0.data4=update(mod3,.~.-stroke )
-
-# RMSE of train dataset
-RMSE(pred = (mod0.data4$fitted.values*0.06+1)^(1/0.06), obs = (data_train4$price*0.06+1)^(1/0.06))
-
-# RMSE in the test dataset
-
-mod.data4_pred <- predict(mod0.data4, newdata = data_test4)
-RMSE(pred = (mod.data4_pred*0.06+1)^(1/0.06), obs = (data_test4$price*0.06+1)^(1/0.06))
-
-```
