@@ -1,12 +1,14 @@
 ---
 title: "Modelling Competition: House Prices"
 author: 
-- Roberto Alvarez Llordachs
-- Javier Goñi Artieda
 - Marcos Crespo Díaz
-- Gabriela Levenfeld Sabau
-- Sofía Gianelli Nan
 - Miguel Díaz-Plaza Cabrera
+- Gabriela Levenfeld Sabau
+- Roberto Alvarez Llordachs
+- Sofía Gianelli Nan
+- Javier Goñi Artieda
+
+
 date: "`r Sys.Date()`"
 output:
   pdf_document: 
@@ -491,6 +493,7 @@ train_train <- train[index, ]
 train_validation  <- train[-index, ]
 ```
 
+Lets correct for the categories that dont appear in train validation for Exterior1st
 
 ```{r}
 model1 <- lm(SalePrice~.,data=train_train)
@@ -522,6 +525,12 @@ The following step is to use step AIC.
 model2aic <- stepAIC(model2,direction="both", trace=FALSE)
 summary(model2aic)
 ```
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
+# RMSE of train dataset
+RMSE(model2aic$fitted.values, train_train$SalePrice)
+```
+
+(REsults are no staisfactory, we next try to check for multicolinearity)
 
 ## Multicoliniarity 
 
@@ -592,6 +601,12 @@ Ya no hay multicolinealidad.
 
 ```{r}
 summary(modelvif4)
+```
+Once the multicolinearity is managed, we check the RMSE again.
+
+```{r, cache=FALSE, message=FALSE,warning=FALSE}
+# RMSE of train dataset
+RMSE(modelvif4$fitted.values, train_train$SalePrice)
 ```
 
 
@@ -681,6 +696,10 @@ model_interactions <- lm(formula= SalePrice~ LotArea + YearRemodAdd + BsmtFinSF1
 
 summary(model_interactions)
 ```
+```{r}
+RMSE(model_interactions$fitted.values, train_validation$SalePrice)
+```
+
 
 ## Compare reduce model with full one using ANOVA
 
@@ -695,11 +714,6 @@ Its better the model with the interactions.
 ```{r}
 alias(model_interactions)
 ```
-
-```{r}
-vif(model_interactions)
-```
-
 
 ## Linearity
 
@@ -744,7 +758,7 @@ plot(model_interactions)
 residual_qqnorm <- qqnorm(model_interactions$residuals)
 
 # Obtener los índices de los valores atípicos
-outliers_indices <- which(abs(model_interactions$residuals) > 4 * sd(model_interactions$residuals))
+outliers_indices <- which(abs(model_interactions$residuals) > 3 * sd(model_interactions$residuals))
 
 # Acceder a los valores atípicos
 outliers <- model_interactions$residuals[outliers_indices]
@@ -764,10 +778,28 @@ summary(model_outliers)
 
 The model R^2 improves and the residual standard error decrease from 0.10 to 0.08
 
+
+```{r}
+RMSE(model_outliers$fitted.values, train_train$SalePrice)
+```
+SOmos incapaces de mejorar, probamos a sacar varaibles no significativas con muchas categorias, a ver si mejoramos las assumptions y el rmse.
+
+We want to check for the RMSE in validation dataset. We drop Functional and Exterior1st because of poor categories statistical importance.
+
+```{r}
+model_new=update(model_outliers, .~.- Functional- Exterior1st)
+summary(model_new)
+
+RMSE(model_new$fitted.values, train_train[-outliers_indices,]$SalePrice)
+RMSE(predict(model_new, newdata=train_validation), train_validation$SalePrice)
+```
+
+
 ```{r}
 par(mfrow=c(2,2))
 plot(model_outliers)
 ```
+
 
 
 ```{r}
@@ -792,9 +824,14 @@ Since the assumptions are not satisfied we need to explore possible transformati
 
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-modelovif1_outliers.boxcox=a=boxcox(modelovif1_outliers,lambda = seq(-10, 2, length.out = 10))
-modelovif1_outliers.boxcox$x[which.max(modelovif1_outliers.boxcox$y)]
+model_outliers.boxcox=boxcox(model_outliers,lambda = seq(-10, 2, length.out = 10))
+model_outliers.boxcox$x[which.max(model_outliers.boxcox$y)]
 ```
+```{r}
+train_train$SalePrice=
+train_validation$SalePrice=
+```
+
 
 # Model Performance
 
