@@ -482,6 +482,7 @@ Cambiamos el orden de los factores, a que el base sea "None".
 train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4,5,2,6,3,1)])
 ```
 
+
 Separamos en TRAIN_TRAIN (70%) Y TRAIN_VALIDATION (30%)
 
 ```{r}
@@ -491,6 +492,77 @@ index <- sample(seq_len(nrow(train)), size = samplesize)
 
 train_train <- train[index, ]
 train_validation  <- train[-index, ]
+```
+
+## Miramos las categorias disferentes entre train_train y train_val
+
+```{r}
+categorias_diferentes2 <- obtener_diferencia_categorias(train_train[,27:63], train_validation[,27:63])
+categorias_diferentes3 <- obtener_diferencia_categorias(train_validation[,27:63],train_train[,27:63])
+# Muestra los nombres de las categorías únicas presentes en dataframe_1 pero no en dataframe_2
+print("Nombres de categorías presentes en dataframe_1 pero no en dataframe_2:")
+print(categorias_diferentes2)
+#print(categorias_diferentes3)
+```
+
+```{r}
+# Para categorias_diferentes3
+train_validation$Functional <- replace(train_validation$Functional, train_validation$Functional == "Sev", "Typ")
+train_train$Functional <- droplevels(train_train$Functional, exclude= "Sev")
+train_validation$Functional <- droplevels(train_validation$Functional, exclude= "Sev")
+
+train_validation$ExterCond <- replace(train_validation$ExterCond, train_validation$ExterCond == "Po", "TA")
+train_train$ExterCond <- droplevels(train_train$ExterCond, exclude= "Po")
+train_validation$ExterCond <- droplevels(train_validation$ExterCond, exclude= "Po")
+
+train_validation$Exterior2nd <- replace(train_validation$Exterior2nd, train_validation$Exterior2nd == "CBlock", "VinylSd")
+train_train$Exterior2nd <- droplevels(train_train$Exterior2nd, exclude= "CBlock")
+train_validation$Exterior2nd <- droplevels(train_validation$Exterior2nd, exclude= "CBlock")
+
+train_validation$Exterior1st <- replace(train_validation$Exterior1st, train_validation$Exterior1st == "CBlock", "VinylSd")
+train_train$Exterior1st <- droplevels(train_train$Exterior1st, exclude= "CBlock")
+train_validation$Exterior1st <- droplevels(train_validation$Exterior1st, exclude= "CBlock")
+
+# Esto es para categorias_diferentes2
+train_train$Neighborhood <- replace(train_train$Neighborhood, train_train$Neighborhood == "Blueste", "NAmes")
+train_validation$Neighborhood <- droplevels(train_validation$Neighborhood, exclude= "Blueste")
+train_train$Neighborhood <- droplevels(train_train$Neighborhood, exclude= "Blueste")
+
+train_train$OverallQual <- replace(train_train$OverallQual, train_train$OverallQual == "1", "5")
+train_validation$OverallQual <- droplevels(train_validation$OverallQual, exclude= "1")
+train_train$OverallQual <- droplevels(train_train$OverallQual, exclude= "1")
+
+train_train$OverallCond <- replace(train_train$OverallCond, train_train$OverallCond == "1", "5")
+train_validation$OverallCond <- droplevels(train_validation$OverallCond, exclude= "1")
+train_train$OverallCond <- droplevels(train_train$OverallCond, exclude= "1")
+
+train_train$Exterior1st <- replace(train_train$Exterior1st, train_train$Exterior1st == "AsphShn", "VinylSd")
+train_train$Exterior1st <- droplevels(train_train$Exterior1st, exclude= "AsphShn")
+train_validation$Exterior1st <- droplevels(train_validation$Exterior1st, exclude= "AsphShn")
+
+train_train$ExterCond <- replace(train_train$ExterCond, train_train$ExterCond == "Ex", "TA")
+train_train$ExterCond <- droplevels(train_train$ExterCond, exclude= "Ex")
+train_validation$ExterCond <- droplevels(train_validation$ExterCond, exclude= "Ex")
+
+train_train$Foundation <- replace(train_train$Foundation, train_train$Foundation == "Wood", "PConc")
+train_train$Foundation <- droplevels(train_train$Foundation, exclude= "Wood")
+train_validation$Foundation <- droplevels(train_validation$Foundation, exclude= "Wood")
+
+train_train$BsmtCond <- replace(train_train$BsmtCond, train_train$BsmtCond == "Po", "TA")
+train_train$BsmtCond <- droplevels(train_train$BsmtCond, exclude= "Po")
+train_validation$BsmtCond <- droplevels(train_validation$BsmtCond, exclude= "Po")
+
+train_train$HeatingQC <- replace(train_train$HeatingQC, train_train$HeatingQC == "Po", "Ex")
+train_train$HeatingQC <- droplevels(train_train$HeatingQC, exclude= "Po")
+train_validation$HeatingQC <- droplevels(train_validation$HeatingQC, exclude= "Po")
+
+train_train$SaleType <- replace(train_train$SaleType, train_train$SaleType == "Con", "WD")
+train_train$SaleType <- droplevels(train_train$SaleType, exclude= "Con")
+train_validation$SaleType <- droplevels(train_validation$SaleType, exclude= "Con")
+
+train_train$SaleType <- replace(train_train$SaleType, train_train$SaleType == "Oth", "WD")
+train_train$SaleType <- droplevels(train_train$SaleType, exclude= "Oth")
+train_validation$SaleType <- droplevels(train_validation$SaleType, exclude= "Oth")
 ```
 
 
@@ -514,7 +586,7 @@ Our criteria for choosing the variable to delete is based on the description and
 With the alias function we delete GarageCond, BldgType, Exterior2nd, BsmtQual, BsmtExposure, BsmtFinType1 and GarageType.
 
 ```{r}
-model2 <- lm(SalePrice~.-GarageCond -BldgType -Exterior2nd -BsmtQual -BsmtExposure -BsmtFinType1 -GarageType,data=train_train)
+model2 <- lm(SalePrice~.-Exterior2nd -BsmtQual -BsmtCond -GarageCond -BldgType -BsmtFinType1 -GarageFinish,data=train_train)
 alias(model2)
 ```
 
@@ -524,6 +596,8 @@ The following step is to use step AIC.
 model2aic <- stepAIC(model2,direction="both", trace=FALSE)
 summary(model2aic)
 ```
+
+Esto no tendría que ir aquí
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
 # RMSE of train dataset
 RMSE(model2aic$fitted.values, train_train$SalePrice)
@@ -544,12 +618,13 @@ We delete `TotalBsmtSF` . GVIF^(1/(2*Df))=8.489150 . We have to compare with $\s
 ```{r}
 modelvif1<- lm(formula = SalePrice ~ LotArea + YearBuilt + YearRemodAdd + 
     BsmtFinSF1 + BsmtUnfSF + X2ndFlrSF + GrLivArea + 
-    GarageYrBlt + GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
-    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+    GarageYrBlt + GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
     MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
     Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
-    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
-    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+    RoofMatl + Exterior1st + Foundation + BsmtExposure + Heating + 
+    CentralAir + Electrical + KitchenQual + Functional + GarageType + 
+    SaleCondition, data = train_train)
 vif(modelvif1)
 ```
 
@@ -558,12 +633,13 @@ We remove `X2ndFlrSF` the GVIF^(1/(2*Df))=4.533315. We have to compare with $\sq
 ```{r}
 modelvif2<- lm(formula = SalePrice ~ LotArea + YearBuilt + YearRemodAdd + 
     BsmtFinSF1 + BsmtUnfSF + GrLivArea + 
-    GarageYrBlt + GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
-    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+    GarageYrBlt + GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
     MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
     Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
-    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
-    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+    RoofMatl + Exterior1st + Foundation + BsmtExposure + Heating + 
+    CentralAir + Electrical + KitchenQual + Functional + GarageType + 
+    SaleCondition, data = train_train)
 vif(modelvif2)
 ```
 
@@ -571,28 +647,32 @@ vif(modelvif2)
 We remove `YearBuilt` the GVIF^(1/(2*Df))=4.076025. We have to compare with $\sqrt{10}\approx$ 3.2
 
 ```{r}
-modelvif3<- lm(formula = SalePrice ~ LotArea + YearRemodAdd + 
-    BsmtFinSF1 + BsmtUnfSF + GrLivArea + 
-    GarageYrBlt + GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
-    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+modelvif3 <- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
+                 BsmtUnfSF + GrLivArea + GarageYrBlt + GarageArea + WoodDeckSF +
+                 BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
     MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
     Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
-    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
-    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+    RoofMatl + Exterior1st + Foundation + BsmtExposure + Heating + 
+    CentralAir + Electrical + KitchenQual + Functional + GarageType + 
+    SaleCondition, data = train_train)
 vif(modelvif3)
 ```
 
 We remove `GarageYrBlt` the GVIF^(1/(2*Df))=3.937849. We have to compare with $\sqrt{10}\approx$ 3.2
 
 ```{r}
-modelvif4<- lm(formula = SalePrice ~ LotArea + YearRemodAdd + 
-    BsmtFinSF1 + BsmtUnfSF + GrLivArea + 
-    GarageArea + WoodDeckSF + YrSold + BsmtFullBath + 
-    FullBath + HalfBath + BedroomAbvGr + Fireplaces + GarageCars + 
+
+modelvif4 <- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
+                 BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF +
+                 BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
     MoSold + MSSubClass + MSZoning + LotConfig + LandSlope + 
     Neighborhood + Condition1 + HouseStyle + OverallQual + OverallCond + 
-    RoofMatl + Exterior1st + Foundation + BsmtCond + Heating + 
-    CentralAir + KitchenQual + Functional + GarageFinish + SaleCondition, data = train_train)
+    RoofMatl + Exterior1st + Foundation + BsmtExposure + Heating + 
+    CentralAir + Electrical + KitchenQual + Functional + GarageType + 
+    SaleCondition, data = train_train)
+
 vif(modelvif4)
 ```
 
@@ -620,12 +700,12 @@ Usually, we mark as a significant interaction when p<0.05. However, because we h
 ```{r}
 dependent_variable <- "SalePrice"
 name_vars <- c('LotArea' , 'YearRemodAdd' , 'BsmtFinSF1' , 
-    'BsmtUnfSF' , 'GrLivArea' , 'GarageArea' , 'WoodDeckSF' , 'YrSold' , 
-    'BsmtFullBath' , 'FullBath' , 'HalfBath' , 'BedroomAbvGr' , 'Fireplaces' , 
+    'BsmtUnfSF' , 'GrLivArea' , 'GarageYrBlt', 'GarageArea' , 'WoodDeckSF' , 
+    'BsmtFullBath' , 'FullBath' , 'HalfBath' , 'BedroomAbvGr' , 'KitchenAbvGr', 'Fireplaces' ,
     'GarageCars' , 'MoSold' , 'MSSubClass' , 'MSZoning' , 'LotConfig' , 
     'LandSlope' , 'Neighborhood' , 'Condition1' , 'HouseStyle' , 'OverallQual' , 
-    'OverallCond' , 'RoofMatl' , 'Exterior1st' , 'Foundation' , 'BsmtCond' , 
-    'Heating' , 'CentralAir' , 'KitchenQual' , 'Functional' , 'GarageFinish' , 
+    'OverallCond' , 'RoofMatl' , 'Exterior1st' , 'Foundation' , 'BsmtExposure' , 
+    'Heating' , 'CentralAir' , 'Electrical', 'KitchenQual' , 'Functional' , 'GarageType',
     'SaleCondition')
 interaction_matrix <- matrix(0, ncol =  length(name_vars), nrow =  length(name_vars), dimnames = list(name_vars,name_vars))
 
@@ -637,21 +717,21 @@ for (i in 1:(length(name_vars))) {
     if (variable1 != dependent_variable && variable2 != dependent_variable && variable1 != variable2) {
       # Run both models
       lmod_all_vars <- lm(as.formula(paste(dependent_variable, "~ LotArea + YearRemodAdd + BsmtFinSF1 + 
-    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
-    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
+    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + BsmtFullBath + 
+    FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + 
     GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
     LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
-    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
-    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
-    SaleCondition +", variable1, ":", variable2)), data = train_train)
+    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtExposure + 
+    Heating + CentralAir + Electrical + KitchenQual + Functional + 
+    GarageType + SaleCondition +", variable1, ":", variable2)), data = train_train)
       lmod_without_inter <- lm(as.formula(paste(dependent_variable, "~ LotArea + YearRemodAdd + BsmtFinSF1 + 
-    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
-    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
+    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + BsmtFullBath + 
+    FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + 
     GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
     LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
-    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
-    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
-    SaleCondition -", variable1, ":", variable2)), data = train_train)
+    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtExposure + 
+    Heating + CentralAir + Electrical + KitchenQual + Functional + 
+    GarageType + SaleCondition -", variable1, ":", variable2)), data = train_train)
     
       anova_result <- anova(lmod_all_vars, lmod_without_inter)
       interaction_matrix[variable1, variable2] <- anova_result[2, "Pr(>F)"]
@@ -686,18 +766,18 @@ for (i in 1:nrow(significant_interactions)) {
 
 ```{r}
 model_interactions <- lm(formula= SalePrice~ LotArea + YearRemodAdd + BsmtFinSF1 + 
-    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + YrSold + 
-    BsmtFullBath + FullBath + HalfBath + BedroomAbvGr + Fireplaces + 
+    BsmtUnfSF + GrLivArea + GarageArea + WoodDeckSF + BsmtFullBath + 
+    FullBath + HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + 
     GarageCars + MoSold + MSSubClass + MSZoning + LotConfig + 
     LandSlope + Neighborhood + Condition1 + HouseStyle + OverallQual + 
-    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtCond + 
-    Heating + CentralAir + KitchenQual + Functional + GarageFinish + 
-    SaleCondition +YearRemodAdd : GrLivArea +LotArea : Neighborhood , data = train_train)
+    OverallCond + RoofMatl + Exterior1st + Foundation + BsmtExposure + 
+    Heating + CentralAir + Electrical + KitchenQual + Functional + 
+    GarageType + SaleCondition + YearRemodAdd : GrLivArea +LotArea : Neighborhood , data = train_train)
 
 summary(model_interactions)
 ```
 ```{r}
-RMSE(model_interactions$fitted.values, train_validation$SalePrice)
+RMSE(model_interactions$fitted.values, train_train$SalePrice)
 ```
 
 
@@ -719,26 +799,56 @@ alias(model_interactions)
 model_interactions_stepAIC <- stepAIC(model_interactions,direction="both", trace=FALSE)
 summary(model_interactions_stepAIC)
 ```
+
 ```{r}
 vif(model_interactions_stepAIC)
 ```
+
+Hemos eliminado YearRemodAdd:GrLivArea por el vif.
+
 ```{r}
 model_interactionsvif <- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
-    GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
-    HalfBath + BedroomAbvGr + Fireplaces + GarageCars + MSSubClass + 
-    MSZoning + LotConfig  + Condition1 + HouseStyle + 
-    OverallQual + OverallCond + RoofMatl + Exterior1st + Foundation + 
-    BsmtCond + Heating + CentralAir + KitchenQual + Functional + 
-    SaleCondition + YearRemodAdd:GrLivArea + LotArea:Neighborhood, 
+    GrLivArea + GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
+    MSSubClass + MSZoning + LotConfig + Neighborhood + Condition1 + 
+    HouseStyle + OverallQual + OverallCond + RoofMatl + Exterior1st + 
+    Foundation + BsmtExposure + Heating + CentralAir + KitchenQual + 
+    Functional + SaleCondition + LotArea:Neighborhood,
     data = train_train)
 vif(model_interactionsvif)
 ```
-Hemos eliminado GrLivArea, Neighborhood por el vif.
+Al hacer el vif tenemos que quitar: LotArea
+
+```{r}
+model_interactionsvif2 <- lm(formula = SalePrice ~ YearRemodAdd + BsmtFinSF1 + 
+    GrLivArea + GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
+    MSSubClass + MSZoning + LotConfig + Neighborhood + Condition1 + 
+    HouseStyle + OverallQual + OverallCond + RoofMatl + Exterior1st + 
+    Foundation + BsmtExposure + Heating + CentralAir + KitchenQual + 
+    Functional + SaleCondition + LotArea:Neighborhood,
+    data = train_train)
+vif(model_interactionsvif2)
+```
+
+Al hacer el vif tenemos que quitar: Neighborhood  (31.514782)
+
+```{r}
+model_interactionsvif3 <- lm(formula = SalePrice ~ YearRemodAdd + BsmtFinSF1 + 
+    GrLivArea + GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
+    MSSubClass + MSZoning + LotConfig + Condition1 + 
+    HouseStyle + OverallQual + OverallCond + RoofMatl + Exterior1st + 
+    Foundation + BsmtExposure + Heating + CentralAir + KitchenQual + 
+    Functional + SaleCondition + LotArea:Neighborhood,
+    data = train_train)
+vif(model_interactionsvif3)
+```
 
 ## Linearity
 
 ```{r, cache=FALSE, message=FALSE,warning=FALSE}
-resact <- data.frame(residual = model_interactionsvif$residuals, fitted = model_interactionsvif$fitted.values)
+resact <- data.frame(residual = model_interactionsvif3$residuals, fitted = model_interactionsvif3$fitted.values)
 resact %>% ggplot(aes(fitted, residual)) + geom_point() + geom_smooth() + geom_hline(aes(yintercept = 0)) + 
     theme(panel.grid = element_blank(), panel.background = element_blank())
 ```
@@ -750,7 +860,7 @@ Shapiro test
 H0 = normality
 
 ```{r}
-shapiro.test(model_interactionsvif$residuals)
+shapiro.test(model_interactionsvif3$residuals)
 ```
 
 So data do not follow a normal distribution
@@ -761,40 +871,48 @@ So data do not follow a normal distribution
 
 ```{r}
 par(mfrow=c(2,2))
-plot(model_interactionsvif)
-```
-We want to check for the RMSE in validation dataset. We drop Functional and Exterior1st because of poor categories statistical importance.
-
-```{r}
-model_new=update(model_interactionsvif, .~.- Functional- Exterior1st)
-summary(model_new)
-
-RMSE(model_new$fitted.values, train_train$SalePrice)
-RMSE(predict(model_new, newdata=train_validation), train_validation$SalePrice)
+plot(model_interactionsvif3)
 ```
 
 
 
 ```{r}
 # Crear el gráfico de cuantiles normales de los residuos
-residual_qqnorm <- qqnorm(model_new$residuals)
+residual_qqnorm <- qqnorm(model_interactionsvif3$residuals)
 
 # Obtener los índices de los valores atípicos
-outliers_indices <- which(abs(model_new$residuals) > 3 * sd(model_new$residuals))
+outliers_indices <- which(abs(model_interactionsvif3$residuals) > 2 * sd(model_interactionsvif3$residuals))
 
 # Acceder a los valores atípicos
-outliers <- model_new$residuals[outliers_indices]
+outliers <- model_interactionsvif3$residuals[outliers_indices]
 ```
 
 ```{r}
-model_outliers<- lm(formula = SalePrice ~ LotArea + YearRemodAdd + BsmtFinSF1 + 
-    GarageArea + WoodDeckSF + BsmtFullBath + FullBath + HalfBath + 
-    BedroomAbvGr + Fireplaces + GarageCars + MSSubClass + MSZoning + 
-    LotConfig + Condition1 + HouseStyle + OverallQual + OverallCond + 
-    RoofMatl + Foundation + BsmtCond + Heating + CentralAir + 
-    KitchenQual + SaleCondition + YearRemodAdd:GrLivArea + LotArea:Neighborhood, 
-    data = train_train[-outliers_indices,])
+model_outliers <- lm(formula = SalePrice ~ YearRemodAdd + BsmtFinSF1 + 
+    GrLivArea + GarageArea + WoodDeckSF + BsmtFullBath + FullBath + 
+    HalfBath + BedroomAbvGr + KitchenAbvGr + Fireplaces + GarageCars + 
+    MSSubClass + MSZoning + LotConfig + Condition1 + 
+    HouseStyle + OverallQual + OverallCond + RoofMatl + Exterior1st + 
+    Foundation + BsmtExposure + Heating + CentralAir + KitchenQual + 
+    Functional + SaleCondition + LotArea:Neighborhood, 
+    data = train_train[-c(81,260,551),])
 summary(model_outliers)
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(model_outliers)
+```
+
+```{r}
+# Crear el gráfico de cuantiles normales de los residuos
+residual_qqnorm <- qqnorm(model_outliers$residuals)
+
+# Obtener los índices de los valores atípicos
+outliers_indices <- which(abs(model_outliers$residuals) > 3 * sd(model_outliers$residuals))
+
+# Acceder a los valores atípicos
+outliers <- model_outliers$residuals[outliers_indices]
 ```
 
 The model R^2 improves and the residual standard error decrease from 0.10 to 0.08
