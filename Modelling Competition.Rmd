@@ -104,7 +104,7 @@ Number_NA_test<-(colSums(is.na(test))/nrow(test))*100
 sort(Number_NA_test,decreasing = TRUE)
 ```
 
-What should we do with the variables that have more missing values than existing ones? Maintaining them can we a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. Consequently, we are going to delete the variables, where the percentage of NA is high (>80%). They are: "PoolQC" and the associated numerical one, "PoolArea", "MiscFeature" and "MiscVal" (numerical), "Fence" and "Alley". 
+What should we do with the variables that have more missing values than existing ones? Maintaining them can be a problem as makes no sense to substitute missing values with an statistic of the remaining, such as the mean, as the latter would not be representative. Consequently, we are going to delete the variables, where the percentage of NA is high (>80%). They are: "PoolQC" and the associated numerical one, "PoolArea", "MiscFeature" and "MiscVal" (numerical), "Fence" and "Alley". 
 
 Other variables are going to be deleted due to the great deal of values in a single category, which would imply that the rest of the categories are seen as outliers. This is the case of: Utilities, Street, Condition2, and PavedDrive.
 
@@ -117,7 +117,7 @@ train <- train[,-c(13,22,23,37,38,73,75,76,77,78,41,46)]
 test <- test[,-c(12,21,22,36,37,72,74,75,76,77,40,45)]
 ```
 
-In most of the cases, NA´s have meaning, it means that the house lack of the object mentioned. For example, in the variable FirePlaceQu, NA means no fireplaces. Those that start with MasVnr, the NA means that we have no Masonry veneer area. (the NA means that the house has no basement, for Bsmt... variables, no garage in the houses where we find a NA in garage...). Consequently, we should change NA for None so that they will later appear when displaying these variables values and 0 for numerical ones. We checked that numerical variables that do not have NAs (GarageArea or GarageCars) have the same percentage of 0´s that we have for NA´s.
+In most of the cases, NA�s have meaning, it means that the house lack of the object mentioned. For example, in the variable FirePlaceQu, NA means no fireplaces. Those that start with MasVnr, the NA means that we have no Masonry veneer area. (the NA means that the house has no basement, for Bsmt... variables, no garage in the houses where we find a NA in garage...). Consequently, we should change NA for None so that they will later appear when displaying these variables values and 0 for numerical ones. We checked that numerical variables that do not have NA�s (GarageArea or GarageCars) have the same percentage of 0�s that we have for NA�s.
 
 ```{r replace na, echo=FALSE}
 train$BsmtFinType1 <- ifelse(is.na(train$BsmtFinType1),"None",train$BsmtFinType1)
@@ -151,7 +151,7 @@ test$GarageYrBlt <- ifelse(is.na(test$GarageYrBlt),0,test$GarageYrBlt)
 test$MasVnrArea <- ifelse(is.na(test$MasVnrArea),0,test$MasVnrArea)
 ```
 
-At first we decided to create dummy variables for garage variables, YearRemodAdd and MasVnr variables,as we thought that imputing 0 for the missing values makes no sense in the numerical variables, as distort the means and other measures. The dummy will equal 0 when the house has no garage and 1 when yes, so we would replace the 0´s of numerical variables to NA´s, as it does not matter their value as would be multiplied by 0. However, at the end, when computing the error we were having problems with the NA´s. Therefore, we continue with the above described model.
+At first we decided to create dummy variables for garage variables, YearRemodAdd and MasVnr variables,as we thought that imputing 0 for the missing values makes no sense in the numerical variables, as distort the means and other measures. The dummy will equal 0 when the house has no garage and 1 when yes, so we would replace the 0�s of numerical variables to NA�s, as it does not matter their value as would be multiplied by 0. However, at the end, when computing the error we were having problems with the NA�s. Therefore, we continue with the above described model.
 
 We will fix the rest of the missing values in the test data, changing for the mode in categorical variables and for the median in numerical ones.
 
@@ -171,9 +171,9 @@ test$Functional<- ifelse(is.na(test$Functional),"Typ",test$Functional)
 test$MSZoning<- ifelse(is.na(test$MSZoning),"RL",test$MSZoning)
 ```
 
-It is worth to mention the case of LotFrontage, as the amount of missing values is high, special attention should be paid. Instead of computing just the median of the data, we have used a multivariate imputation method, so that we have make the median based on other attribute that is related to this variable, such as the neighborhood, with the idea that in the same neighborhood the LotFrontage would be similar.
+It is worth to mention the case of LotFrontage, as the amount of missing values is high, special attention should be paid. Instead of computing just the median of the data, we have used a multivariate imputation method, so that we have made the median based on other attribute that is related to this variable, such as the neighborhood, with the idea that in the same neighborhood the LotFrontage would be similar.
  
-```{r frontage echo=FALSE}
+```{r frontage , echo=FALSE}
 # Calcular la mediana por grupo utilizando tapply
 medianas_por_grupo_train <- tapply(train$LotFrontage, train$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
 medianas_por_grupo_test <- tapply(test$LotFrontage, test$Neighborhood, FUN = function(x) median(x, na.rm = TRUE))
@@ -318,19 +318,16 @@ summary(num_test_dataset)
 
 ## Correlation
 
-To see which the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
+To see which are the quantitative features that strongly affect home price, checking the correlation may be an interesting idea.
 
 ```{r, fig.height=7,fig.width=7,echo=FALSE}
 correlation_matrix <- cor(num_train_dataset,use='pairwise.complete.obs')
 rownames(correlation_matrix) <- colnames(correlation_matrix) <- 1:ncol(correlation_matrix)
-corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7, type="upper")
+corrplot(correlation_matrix, method = "color", tl.col = "black", title="Correlation Matrix",tl.srt = 0,tl.cex = 0.7, type="upper", diag=FALSE)
+
 ```
 
-```{r, cache=FALSE, message=FALSE,warning=FALSE,echo=FALSE}
-ggcorr(num_train_dataset, label = TRUE, label_size = 2.9, hjust = 1, digits =3,layout.exp = 2)
-```
-
-The response variable, Sale Price, is strongly influenciated by the GrLivArea, GarageArea and GarageCars. Other important variables are FullBath, YearBuild, YearRemodAdd or TotalBsmtSF.
+The response variable, Sale Price, is strongly influenciated by the GrLivArea, GarageArea and GarageCars. Other important variables are FullBath, YearBuilt, YearRemodAdd or TotalBsmtSF.
 
 ```{r, echo=FALSE}
 ggplot(train, aes(x = factor(GarageCars), y = SalePrice, fill = factor(GarageCars))) +
@@ -549,16 +546,17 @@ test[,c(1,10,12,13)] <- log(test[,c(1,10,12,13)])
 train[,c(3,6,7,10,12,16,17,22,24,25,27,29)] <- log(train[,c(3,6,7,10,12,16,17,22,24,25,27,29)]+1)
 test[,c(2,5,6,9,11,15,16,21,23,24,26,28)] <- log(test[,c(2,5,6,9,11,15,16,21,23,24,26,28)]+1)
 ```
+Next step is to get the scatter and density plots for the quantitative features (31 variables) in order to decide which transformation we will apply them (just if it is necessary).
 
 Different transformation have been applied to different variables, they are:
 
-  - 
+  - Square root(max(x+1)-x): When there is moderate skew data, this is applied when it is negatively skewed
   
-  - Square root: 
+  - Square root: Same  claim as before although in this case is implemented when is positively skewed
   
   - Logarithm: Applied to the variables that have a positive skewness, that are right-tailed. 
   
-  - Logarithm (X+1): Same argue as above, but this was done for variables that have zero values, so as to avoid errors. It was applied to 
+  - Logarithm (X+1): Same argument as above, but this was done for variables that have zero values, so as to avoid errors. It was applied to 
 
 
 ```{r, warning=FALSE, message=FALSE, include=FALSE}
@@ -604,17 +602,18 @@ test<-test[,-c(7,17,18,19,22)]
 
 # Model:
 
-Cambiamos el orden de los factores, a que el base sea "None".
-
-```{r}
+```{r, change of order in category variables, echo=FALSE}
+#We change the order of the factors so the baseline factor is "None".
 train$GarageCond <- factor(train$GarageCond, levels=levels(train$GarageCond)[c(4,5,2,6,3,1)])
 test$GarageCond <- factor(test$GarageCond, levels=levels(test$GarageCond)[c(4,5,2,6,3,1)])
 ```
 
+Due to the absence of the target variable in the test dataset, we adopted a train-validation split
+methodology. This involved dividing our available training data into two subsets: 'train_train'(70%) and
+'train_validation'(30%). The 'train_train' subset was utilized for training our predictive model, while the
+'train_validation' subset served as a validation set to assess the model's performance.
 
-Separamos en TRAIN_TRAIN (70%) Y TRAIN_VALIDATION (30%)
-
-```{r}
+```{r Train validation split}
 set.seed(33)
 samplesize <- round(0.7 * nrow(train), 0)
 index <- sample(seq_len(nrow(train)), size = samplesize)
@@ -624,8 +623,9 @@ train_validation  <- train[-index, ]
 ```
 
 ## Miramos las categorias disferentes entre train_train y train_validation
+Hemos puesto todas las categorias iguales tanto en traintrain como en train validation y tambien en train y test porque sino sale un error mm, para tener los mismos factores en todas las bases
 
-```{r}
+```{r , echo=FALSE}
 categorias_diferentes2 <- obtener_diferencia_categorias(train_train[,27:63], train_validation[,27:63])
 categorias_diferentes3 <- obtener_diferencia_categorias(train_validation[,27:63],train_train[,27:63])
 # Muestra los nombres de las categorías únicas presentes en dataframe_1 pero no en dataframe_2
@@ -634,7 +634,7 @@ print(categorias_diferentes2)
 #print(categorias_diferentes3)
 ```
 
-```{r}
+```{r quitarcategorias, echo=FALSE}
 # Para categorias_diferentes3
 train_validation$Functional <- replace(train_validation$Functional, train_validation$Functional == "Sev", "Typ")
 train_train$Functional <- droplevels(train_train$Functional, exclude= "Sev")
@@ -768,21 +768,16 @@ test$SaleType <- droplevels(test$SaleType, exclude= "Oth")
 model1 <- lm(SalePrice~.,data=train_train)
 ```
 
-If we were to try to reduce the number of variables using vif, we realize that it returns an error as some variables have a correlation of 1 between them. However, this does not have to do between numeric variables, as we can calculate the correlation values between them and see that none of them is zero:
-{r, cache=FALSE, message=FALSE,warning=FALSE}
-ggcorr(num_train_dataset, label = TRUE, label_size = 2.9, hjust = 1, digits =3,layout.exp = 2)
+Utilizamos el alias para ver las variables que tienen correlaci�n perfecta entre si y eliminarlas
 
-
-Therefore, the problem is with categorical variables. For getting the values that are causing problems we use the alias function.
-
-````{r}
+````{r, echo=FALSE}
 alias(model1)
 ```
 
-We check those variables where the correlation between them has either 1 or -1. First we see, correlation for KitchenAbvGr and: MsSubClass and BldgType, so we delete KitchenAbvGr. Computing again the alias we see correlation for MsSubClass and HouseStyle and delete the latter. 
+THe function *alias()* checks those variables where the correlation between them has either 1 or -1. First we see, correlation for KitchenAbvGr and: MsSubClass and BldgType, so we delete KitchenAbvGr. Computing again the alias we see correlation for MsSubClass and HouseStyle and delete the latter. 
 Our criteria for choosing the variable to delete is based on the description and the variable and the intuition on which one affect more to the sale price. Another important criterion is try to delete those variables that has ones with many variables. 
 With the alias function we delete GarageCond, BldgType, Exterior2nd, BsmtQual, BsmtExposure, BsmtFinType1 and GarageType.
-
+*CORREGIR ESTO*
 ```{r}
 model2 <- lm(SalePrice~.-Exterior2nd -BsmtQual -BsmtCond -GarageCond -BldgType -BsmtFinType1 -GarageFinish,data=train_train)
 alias(model2)
@@ -794,14 +789,6 @@ The following step is to use step AIC.
 model2aic <- stepAIC(model2,direction="both", trace=FALSE)
 summary(model2aic)
 ```
-
-Esto no tendría que ir aquí
-```{r, cache=FALSE, message=FALSE,warning=FALSE}
-# RMSE of train dataset
-RMSE(model2aic$fitted.values, train_train$SalePrice)
-```
-
-(REsults are no staisfactory, we next try to check for multicolinearity)
 
 ## Multicoliniarity 
 
@@ -881,18 +868,12 @@ summary(modelvif4)
 
 Once the multicolinearity is managed, we check the RMSE again.
 
-```{r, cache=FALSE, message=FALSE,warning=FALSE}
-# RMSE of train dataset
-RMSE(modelvif4$fitted.values, train_train$SalePrice)
-```
-
-
 ## Interaction between categorical and numeric variables
 
 The following code, give us the p-value between 2 models. It also creates a file to storage the final results, because this is a process that is a little bit time-consuming. After it will help us to check and compare the p-values for significant iterations.
 
 With the next 2 chunk the idea is to find the most significant interaction between variables so we can incorporate them into the final model.
-Usually, we mark as a significant interaction when p<0.05. However, because we have obtained 30 interactions, we decided to lower such value into 0.005. With this setting (p<0.005) we just find 1 relevant interaction.
+Usually, we mark as a significant interaction when p<0.05. However, because we have obtained 30 interactions, we decided to lower such value into 0.001. With this setting (p<0.001) we just find 1 relevant interaction.
 
 
 ```{r}
@@ -958,7 +939,7 @@ for (i in 1:nrow(significant_interactions)) {
 }
 ```
 
-*Explicar mejor porque nos quedamos con estas dos* 
+*Explicar mejor porque nos quedamos con estas dos de las 10 que han salido* 
 
 +YearRemodAdd : GrLivArea +LotArea : Neighborhood  
 
@@ -976,10 +957,6 @@ model_interactions <- lm(formula= SalePrice~ LotArea + YearRemodAdd + BsmtFinSF1
 summary(model_interactions)
 ```
 
-```{r}
-RMSE(model_interactions$fitted.values, train_train$SalePrice)
-```
-
 
 ## Compare reduce model with full one using ANOVA
 
@@ -991,16 +968,16 @@ Its better the model with the interactions.
 
 ## (MULTICOLINEARITY AGAIN)
 
-```{r}
+```{r, echo=FALSE}
 alias(model_interactions)
 ```
 
-```{r}
+```{r, echo=FALSE}
 model_interactions_stepAIC <- stepAIC(model_interactions,direction="both", trace=FALSE)
 summary(model_interactions_stepAIC)
 ```
 
-```{r}
+```{r, echo=FALSE}
 vif(model_interactions_stepAIC)
 ```
 
@@ -1127,16 +1104,6 @@ resact %>% ggplot(aes(fitted, residual)) + geom_point() + theme_light() + geom_h
 bptest(model_outliers)
 ```
 
-# Model tunning
-
-Since the assumptions are not satisfied we need to explore possible transformations of the response variable:
-
-
-```{r, cache=FALSE, message=FALSE,warning=FALSE}
-model_outliers.boxcox=boxcox(model_outliers,lambda = seq(-10, 2, length.out = 10))
-model_outliers.boxcox$x[which.max(model_outliers.boxcox$y)]
-```
-
 
 # Model Performance
 
@@ -1160,4 +1127,4 @@ Exportamos a un csv las `predicciones_test`.
 write.csv(data.frame(Id=test_original$Id, SalePrice = predicciones_test), file = "predicciones_test.csv", row.names = FALSE)
 ```
 
-
+#Explicaci�n del modelo final
